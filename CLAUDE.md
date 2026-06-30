@@ -19,6 +19,9 @@ npm run lint    # ESLint (flat config, eslint-config-next core-web-vitals + type
 
 There is no test runner configured yet.
 
+## Skills
+Usa siempre /frontend-desgin de Anthropic para el diseño de interfaces de usuario
+
 ## Architecture
 
 - **App Router** under `app/`. `app/layout.tsx` is the root layout (Geist fonts via `next/font/google`, Tailwind via `app/globals.css`); `app/page.tsx` is the home route. Add routes as nested folders with `page.tsx`/`layout.tsx`.
