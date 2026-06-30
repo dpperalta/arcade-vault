@@ -1224,6 +1224,12 @@ a { color: inherit; text-decoration: none; }
 .final-cta { padding: 24px 44px; font-size: 14px; letter-spacing: 0.2em; }
 .final-tag { margin-top: 28px; color: var(--ink-dim); font-size: 13px; letter-spacing: 0.06em; }
 
-/* scroll reveal (SPEC 02) */
-.reveal { opacity: 0; transform: translateY(24px); transition: opacity 600ms ease, transform 600ms ease; }
-.reveal.in { opacity: 1; transform: none; }
+/* scroll reveal (SPEC 02) — fail-safe.
+   El contenido es VISIBLE por defecto. El estado oculto+animado solo se aplica
+   cuando el componente Reveal ha montado y configurado el IntersectionObserver,
+   marcando <html data-reveal>. Si el JS no corre, el observer no dispara o falla
+   la hidratación, el contenido nunca queda invisible (evita la regresión del
+   "contenido desaparecido"). Ver [[debug-verify-pixels-not-dom]]. */
+.reveal { transition: opacity 600ms ease, transform 600ms ease; }
+[data-reveal] .reveal:not(.in) { opacity: 0; transform: translateY(24px); }
+[data-reveal] .reveal.in { opacity: 1; transform: none; }

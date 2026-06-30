@@ -12,6 +12,19 @@ import { useEffect } from "react";
 export default function Reveal() {
   useEffect(() => {
     const els = document.querySelectorAll(".reveal");
+    if (!els.length) return;
+
+    // Sin IntersectionObserver: mostrar todo sin animación (fail-safe).
+    if (typeof IntersectionObserver === "undefined") {
+      els.forEach((el) => el.classList.add("in"));
+      return;
+    }
+
+    const root = document.documentElement;
+    // Solo ahora —ya montados y con el observer listo— habilitamos el estado
+    // oculto+animado. Si este efecto no corre, el contenido queda visible.
+    root.setAttribute("data-reveal", "");
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -24,7 +37,11 @@ export default function Reveal() {
       { threshold: 0.12 },
     );
     els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+
+    return () => {
+      io.disconnect();
+      root.removeAttribute("data-reveal");
+    };
   }, []);
 
   return null;
