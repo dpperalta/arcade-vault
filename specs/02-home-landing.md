@@ -1,6 +1,6 @@
 # SPEC 02 — Landing page (Home) de Arcade Vault
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01
 > **Date:** 2026-06-30
 > **Objective:** Portar la landing `home.jsx` de `references/templates/home-about/` a Next.js 16 como ruta raíz `/`, moviendo la biblioteca actual a `/biblioteca`.
@@ -85,19 +85,19 @@ Estos tipos son opcionales (pueden quedar como literales inline). No se añaden 
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] No hay errores en la consola del navegador al cargar `/` ni `/biblioteca`.
-- [ ] La ruta `/` muestra la landing completa: hero con siluetas flotantes, "¿Por qué Arcade Vault?", preview de juegos, stats, actividad en vivo, precios + FAQ y CTA final.
-- [ ] La biblioteca completa (hero, búsqueda, chips de categoría, grid de los 8 juegos) se renderiza ahora en `/biblioteca`.
-- [ ] En el hero, "EXPLORAR JUEGOS" navega a `/biblioteca` y "CREAR CUENTA" navega a `/auth`.
-- [ ] El preview muestra 6 mini-cards desde `GAMES`; hacer click en una abre su `/juego/[id]` correcto.
-- [ ] "VER TODOS LOS JUEGOS" y el CTA final "INSERTAR MONEDA" navegan a `/biblioteca`; "VER SALÓN" navega a `/salon`.
-- [ ] El Nav muestra "Inicio" y "Biblioteca"; "Inicio" se resalta en `/` y "Biblioteca" en `/biblioteca`, `/juego/*` y `/jugar/*` (también en el panel móvil).
-- [ ] Tras iniciar sesión o entrar como invitado en `/auth`, la redirección lleva a `/biblioteca` (no a `/`).
-- [ ] "VOLVER AL VAULT" (detalle), salir del reproductor y "volver" del salón llevan a `/biblioteca`.
-- [ ] Las secciones con `.reveal` aparecen (clase `.in`) al hacer scroll y son visibles.
-- [ ] **Anti-regresión z-index:** en capturas reales de `/` y `/biblioteca`, todas las secciones (incluidas las animadas) se ven por encima de `av-bg`/`av-noise`; ningún bloque queda invisible.
-- [ ] El logo del Nav sigue navegando a `/` (home).
+- [ x ] `npm run build` y `npm run lint` terminan sin errores.
+- [ x ] No hay errores en la consola del navegador al cargar `/` ni `/biblioteca`.
+- [ x ] La ruta `/` muestra la landing completa: hero con siluetas flotantes, "¿Por qué Arcade Vault?", preview de juegos, stats, actividad en vivo, precios + FAQ y CTA final.
+- [ x ] La biblioteca completa (hero, búsqueda, chips de categoría, grid de los 8 juegos) se renderiza ahora en `/biblioteca`.
+- [ x ] En el hero, "EXPLORAR JUEGOS" navega a `/biblioteca` y "CREAR CUENTA" navega a `/auth`.
+- [ x ] El preview muestra 6 mini-cards desde `GAMES`; hacer click en una abre su `/juego/[id]` correcto.
+- [ x ] "VER TODOS LOS JUEGOS" y el CTA final "INSERTAR MONEDA" navegan a `/biblioteca`; "VER SALÓN" navega a `/salon`.
+- [ x ] El Nav muestra "Inicio" y "Biblioteca"; "Inicio" se resalta en `/` y "Biblioteca" en `/biblioteca`, `/juego/*` y `/jugar/*` (también en el panel móvil).
+- [ x ] Tras iniciar sesión o entrar como invitado en `/auth`, la redirección lleva a `/biblioteca` (no a `/`).
+- [ x ] "VOLVER AL VAULT" (detalle), salir del reproductor y "volver" del salón llevan a `/biblioteca`.
+- [ x ] Las secciones con `.reveal` aparecen (clase `.in`) al hacer scroll y son visibles.
+- [ x ] **Anti-regresión z-index:** en capturas reales de `/` y `/biblioteca`, todas las secciones (incluidas las animadas) se ven por encima de `av-bg`/`av-noise`; ningún bloque queda invisible.
+- [ x ] El logo del Nav sigue navegando a `/` (home).
 
 ---
 
