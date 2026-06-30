@@ -10,9 +10,10 @@ export default function Nav() {
   const pathname = usePathname();
   const { user, signOut } = useArcade();
 
-  // "biblioteca" cubre la home y las rutas de juego (detalle/reproductor).
+  const isHome = pathname === "/";
+  // "biblioteca" cubre el catálogo y las rutas de juego (detalle/reproductor).
   const isLibrary =
-    pathname === "/" ||
+    pathname.startsWith("/biblioteca") ||
     pathname.startsWith("/juego/") ||
     pathname.startsWith("/jugar/");
   const isSalon = pathname === "/salon";
@@ -30,7 +31,14 @@ export default function Nav() {
           </div>
         </Link>
         <div className="links">
-          <Link className={isLibrary ? "active" : ""} href="/" onClick={close}>
+          <Link className={isHome ? "active" : ""} href="/" onClick={close}>
+            Inicio
+          </Link>
+          <Link
+            className={isLibrary ? "active" : ""}
+            href="/biblioteca"
+            onClick={close}
+          >
             Biblioteca
           </Link>
           <Link
@@ -72,7 +80,14 @@ export default function Nav() {
         <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
           MENÚ
         </div>
-        <Link className={isLibrary ? "active" : ""} href="/" onClick={close}>
+        <Link className={isHome ? "active" : ""} href="/" onClick={close}>
+          Inicio
+        </Link>
+        <Link
+          className={isLibrary ? "active" : ""}
+          href="/biblioteca"
+          onClick={close}
+        >
           Biblioteca
         </Link>
         <Link className={isSalon ? "active" : ""} href="/salon" onClick={close}>
