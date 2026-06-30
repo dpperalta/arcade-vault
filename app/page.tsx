@@ -1,7 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { GAMES, type Game } from "./data/games";
 import Reveal from "./components/Reveal";
+
+// Tarjeta compacta del preview de juegos (portado de home.jsx).
+function MiniCard({ game, onClick }: { game: Game; onClick: () => void }) {
+  return (
+    <div className="mini-card" onClick={onClick}>
+      <div className="mini-cover">
+        <div className={"cover-bg " + game.cover}></div>
+      </div>
+      <div className="mini-meta">
+        <div className="mini-title">{game.title}</div>
+        <div className="mini-cat">{game.cat}</div>
+      </div>
+    </div>
+  );
+}
 
 // Siluetas pixel decorativas de formas arcade clásicas (portado de home.jsx).
 function FloatingSilhouettes() {
@@ -271,6 +287,29 @@ export default function Home() {
               <div className="ft-desc">{f.d}</div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* GAMES PREVIEW */}
+      <section className="home-section reveal">
+        <div className="section-head">
+          <div className="kicker pixel neon-cyan">{"// 02"}</div>
+          <h2 className="section-title">JUEGOS DISPONIBLES AHORA</h2>
+          <div className="section-rule"></div>
+        </div>
+        <div className="mini-rail">
+          {GAMES.slice(0, 6).map((g) => (
+            <MiniCard
+              key={g.id}
+              game={g}
+              onClick={() => router.push(`/juego/${g.id}`)}
+            />
+          ))}
+        </div>
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <button className="btn lg" onClick={() => router.push("/biblioteca")}>
+            VER TODOS LOS JUEGOS →
+          </button>
         </div>
       </section>
 
