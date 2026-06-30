@@ -225,6 +225,42 @@ const FEATURES: Feature[] = [
   },
 ];
 
+type StatBlock = { n: string; u: string; s: string };
+
+const STATS: StatBlock[] = [
+  { n: "12+", u: "JUEGOS", s: "Y CONTANDO" },
+  { n: "MILES", u: "DE PARTIDAS", s: "JUGADAS CADA DÍA" },
+  { n: "GLOBAL", u: "RANKING", s: "COMPITE CON EL MUNDO" },
+];
+
+type TickRow = {
+  p: string;
+  g: string;
+  s: number;
+  t: string;
+  c: "magenta" | "yellow" | "green" | "cyan";
+};
+
+const TICKER: TickRow[] = [
+  { p: "NEONFOX", g: "Caída", s: 184220, t: "hace 2 min", c: "magenta" },
+  { p: "PX_KAI", g: "Glotón", s: 96400, t: "hace 5 min", c: "yellow" },
+  { p: "Z3R0COOL", g: "Invasores", s: 54190, t: "hace 8 min", c: "green" },
+  { p: "VAULT_07", g: "Rocas", s: 41200, t: "hace 12 min", c: "cyan" },
+  { p: "GLITCHA", g: "Bloque Buster", s: 28450, t: "hace 18 min", c: "cyan" },
+  { p: "ARKADYA", g: "Serpentina", s: 7820, t: "hace 24 min", c: "green" },
+  { p: "CYBER_LU", g: "Ranaria", s: 18900, t: "hace 31 min", c: "yellow" },
+];
+
+type TopRow = { r: number; p: string; s: number };
+
+const TOP: TopRow[] = [
+  { r: 1, p: "NEONFOX", s: 312840 },
+  { r: 2, p: "PX_KAI", s: 248110 },
+  { r: 3, p: "M00NRYU", s: 196720 },
+  { r: 4, p: "VAULT_07", s: 154300 },
+  { r: 5, p: "GLITCHA", s: 138900 },
+];
+
 export default function Home() {
   const router = useRouter();
 
@@ -310,6 +346,91 @@ export default function Home() {
           <button className="btn lg" onClick={() => router.push("/biblioteca")}>
             VER TODOS LOS JUEGOS →
           </button>
+        </div>
+      </section>
+
+      {/* STATS */}
+      <section className="home-stats reveal">
+        <div className="stats-inner">
+          {STATS.map((st, i) => (
+            <div
+              key={i}
+              className="stat-block"
+              style={{ transitionDelay: i * 90 + "ms" }}
+            >
+              <div className="stat-n neon-yellow">{st.n}</div>
+              <div className="stat-u pixel">{st.u}</div>
+              <div className="stat-s">{st.s}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* RECENT ACTIVITY / LEADERBOARD */}
+      <section className="home-section reveal">
+        <div className="section-head">
+          <div className="kicker pixel neon-yellow">{"// 03"}</div>
+          <h2 className="section-title">ACTIVIDAD EN VIVO</h2>
+          <div className="section-rule"></div>
+        </div>
+        <div className="activity-grid">
+          <div className="activity-card">
+            <div className="ac-head">
+              <div className="ac-title pixel">▸ ÚLTIMAS PUNTUACIONES</div>
+            </div>
+            <div className="ticker">
+              {TICKER.map((r, i) => (
+                <div
+                  key={i}
+                  className="tick-row"
+                  style={{ animationDelay: i * 60 + "ms" }}
+                >
+                  <span className={"tk-p neon-" + r.c}>{r.p}</span>
+                  <span className="tk-mid">▸ {r.g}</span>
+                  <span className="tk-s">+{r.s.toLocaleString("es-ES")}</span>
+                  <span className="tk-t">{r.t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="activity-card">
+            <div className="ac-head">
+              <div className="ac-title pixel neon-magenta">
+                ▸ TOP JUGADORES · HOY
+              </div>
+              <button className="lb-link" onClick={() => router.push("/salon")}>
+                VER SALÓN →
+              </button>
+            </div>
+            <div className="top-list">
+              {TOP.map((r, i) => (
+                <div
+                  key={i}
+                  className={
+                    "top-row" +
+                    (i === 0
+                      ? " top1"
+                      : i === 1
+                        ? " top2"
+                        : i === 2
+                          ? " top3"
+                          : "")
+                  }
+                >
+                  <span className="tp-rk">#{String(r.r).padStart(2, "0")}</span>
+                  <span className="tp-bar">
+                    <span
+                      className="tp-fill"
+                      style={{ width: 100 - i * 16 + "%" }}
+                    ></span>
+                  </span>
+                  <span className="tp-p">{r.p}</span>
+                  <span className="tp-s">{r.s.toLocaleString("es-ES")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
