@@ -1,6 +1,6 @@
 # SPEC 01 — MVP visual de Arcade Vault
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** —
 > **Date:** 2026-06-29
 > **Objective:** Portar las cinco pantallas de la maqueta de `references/templates/` a Next.js 16 (App Router) como interfaz visual navegable, sin implementar ningún juego real.
@@ -115,23 +115,23 @@ interface ArcadeContext {
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] No hay errores en la consola del navegador al cargar cada una de las cinco rutas.
-- [ ] `/` muestra hero, búsqueda, chips de categoría y el grid con los 8 juegos de `GAMES`.
-- [ ] Escribir en la búsqueda filtra las cards por título; sin coincidencias se muestra el bloque "NO HAY RESULTADOS".
-- [ ] Seleccionar un chip de categoría filtra el grid; "TODOS" muestra todos.
-- [ ] Click en una card o en "JUGAR" navega a `/juego/[id]` con la URL correcta.
-- [ ] `/juego/[id]` muestra portada, descripción larga, stats y la tabla de mejores puntuaciones.
-- [ ] En el detalle, "JUGAR AHORA" navega a `/jugar/[id]` y "VOLVER AL VAULT" navega a `/`.
-- [ ] `/jugar/[id]` incrementa la puntuación automáticamente; "PAUSA" la detiene y "FIN" abre el modal "FIN DEL JUEGO".
-- [ ] En el modal, guardar la puntuación la añade a `av_scores` en `localStorage` y muestra "PUNTUACIÓN GUARDADA".
-- [ ] `/auth` permite iniciar sesión (guarda `av_user`) y redirige a `/`; "JUGAR COMO INVITADO" también redirige a `/`.
-- [ ] Con sesión activa, el Nav muestra el nombre del usuario y permite cerrar sesión (borra `av_user`).
-- [ ] `/salon` muestra podio y tabla; cambiar de pestaña de juego refresca las filas.
-- [ ] Con sesión activa, el Salón muestra la fila "TU MEJOR MARCA".
-- [ ] El Nav resalta el enlace activo según la ruta y el panel móvil abre/cierra en pantallas pequeñas.
-- [ ] Las capas `av-bg`, `av-noise` y el footer aparecen en las cinco rutas.
-- [ ] Recargar la página conserva la sesión de usuario y las puntuaciones guardadas.
+- [ x ] `npm run build` y `npm run lint` terminan sin errores.
+- [ x ] No hay errores en la consola del navegador al cargar cada una de las cinco rutas.
+- [ x ] `/` muestra hero, búsqueda, chips de categoría y el grid con los 8 juegos de `GAMES`.
+- [ x ] Escribir en la búsqueda filtra las cards por título; sin coincidencias se muestra el bloque "NO HAY RESULTADOS".
+- [ x ] Seleccionar un chip de categoría filtra el grid; "TODOS" muestra todos.
+- [ x ] Click en una card o en "JUGAR" navega a `/juego/[id]` con la URL correcta.
+- [ x ] `/juego/[id]` muestra portada, descripción larga, stats y la tabla de mejores puntuaciones.
+- [ x ] En el detalle, "JUGAR AHORA" navega a `/jugar/[id]` y "VOLVER AL VAULT" navega a `/`.
+- [ x ] `/jugar/[id]` incrementa la puntuación automáticamente; "PAUSA" la detiene y "FIN" abre el modal "FIN DEL JUEGO".
+- [ x ] En el modal, guardar la puntuación la añade a `av_scores` en `localStorage` y muestra "PUNTUACIÓN GUARDADA".
+- [ x ] `/auth` permite iniciar sesión (guarda `av_user`) y redirige a `/`; "JUGAR COMO INVITADO" también redirige a `/`.
+- [ x ] Con sesión activa, el Nav muestra el nombre del usuario y permite cerrar sesión (borra `av_user`).
+- [ x ] `/salon` muestra podio y tabla; cambiar de pestaña de juego refresca las filas.
+- [ x ] Con sesión activa, el Salón muestra la fila "TU MEJOR MARCA".
+- [ x ] El Nav resalta el enlace activo según la ruta y el panel móvil abre/cierra en pantallas pequeñas.
+- [ x ] Las capas `av-bg`, `av-noise` y el footer aparecen en las cinco rutas.
+- [ x ] Recargar la página conserva la sesión de usuario y las puntuaciones guardadas.
 
 ---
 
