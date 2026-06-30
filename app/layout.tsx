@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Press_Start_2P, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
+import { ArcadeProvider } from "./components/ArcadeProvider";
+import Nav from "./components/Nav";
+import Footer from "./components/Footer";
 
 // Pixel display font (--pixel). Press Start 2P ships a single weight.
 const pressStart = Press_Start_2P({
@@ -29,10 +32,23 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${pressStart.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      {/* suppressHydrationWarning: algunas extensiones del navegador (p.ej.
+          ColorZilla con cz-shortcut-listen) inyectan atributos en <body> antes
+          de que React hidrate, lo que rompería la hidratación del árbol. */}
+      <body suppressHydrationWarning>
+        <div className="av-bg" />
+        <div className="av-noise" />
+        <ArcadeProvider>
+          <div className="av-root">
+            <Nav />
+            <main className="av-main">{children}</main>
+            <Footer />
+          </div>
+        </ArcadeProvider>
+      </body>
     </html>
   );
 }

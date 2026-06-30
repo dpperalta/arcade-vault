@@ -58,7 +58,13 @@ body {
   letter-spacing: 0.01em;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  /* app frame (was #root in the source template) */
+}
+
+/* App frame (#root en la plantilla original). Debe ir en un envoltorio
+   hermano de .av-bg/.av-noise, no en <body>: el z-index lo eleva por encima
+   del fondo fijo y OPACO (.av-bg, z-index:0). Sin esto, el contenido de texto
+   estático de .av-main se pinta por debajo de .av-bg y queda oculto. */
+.av-root {
   position: relative;
   z-index: 2;
   display: flex;
