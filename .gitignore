@@ -41,5 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Playwright MCP output
-.playwright-screenshots/
-.playwright-mcp/
+.playwright-screenshots/*
+!.playwright-screenshots/.gitkeep
+.playwright-mcp/*
+!.playwright-mcp/.gitkeep
