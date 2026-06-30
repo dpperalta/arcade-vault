@@ -35,13 +35,18 @@ export default function RootLayout({
       lang="es"
       className={`${pressStart.variable} ${jetbrainsMono.variable}`}
     >
-      <body>
+      {/* suppressHydrationWarning: algunas extensiones del navegador (p.ej.
+          ColorZilla con cz-shortcut-listen) inyectan atributos en <body> antes
+          de que React hidrate, lo que rompería la hidratación del árbol. */}
+      <body suppressHydrationWarning>
         <div className="av-bg" />
         <div className="av-noise" />
         <ArcadeProvider>
-          <Nav />
-          <main className="av-main">{children}</main>
-          <Footer />
+          <div className="av-root">
+            <Nav />
+            <main className="av-main">{children}</main>
+            <Footer />
+          </div>
         </ArcadeProvider>
       </body>
     </html>
