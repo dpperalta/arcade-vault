@@ -1,6 +1,6 @@
 # SPEC 04 — Integración base de Supabase
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 03
 > **Date:** 2026-07-01
 > **Objective:** Integrar Supabase en la app de Next.js 16 creando los clientes de navegador y servidor con `@supabase/ssr`, las variables de entorno y una verificación temporal de conexión, sin implementar ninguna funcionalidad de producto.
@@ -78,16 +78,16 @@ Convenciones:
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] `@supabase/supabase-js` y `@supabase/ssr` aparecen en `package.json`.
-- [ ] Existe `utils/supabase/client.ts` que exporta `createClient()` y devuelve un cliente de navegador sin lanzar error al importarse desde un componente cliente.
-- [ ] Existe `utils/supabase/server.ts` que exporta `createClient()` `async`, cableado a `cookies()`, sin lanzar error al importarse desde un Server Component.
-- [ ] `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` están definidas en `.env.local` y documentadas (sin valores) en `.env.example`.
-- [ ] `.env.local` no está versionado; `.env.example` sí.
-- [ ] La verificación temporal de conexión (`auth.getUser()`) respondió sin error de credenciales/red durante la implementación.
-- [ ] No queda en el repo ningún archivo ni código de prueba temporal de la verificación.
-- [ ] No se han creado tablas, migraciones ni políticas en Supabase; el esquema `public` sigue vacío.
-- [ ] No se ha modificado ningún componente, ruta ni dato existente (Home, biblioteca, salón, acerca, auth, `ArcadeProvider`, `games.ts`, `scores.ts`).
+- [ x ] `npm run build` y `npm run lint` terminan sin errores.
+- [ x ] `@supabase/supabase-js` y `@supabase/ssr` aparecen en `package.json`.
+- [ x ] Existe `utils/supabase/client.ts` que exporta `createClient()` y devuelve un cliente de navegador sin lanzar error al importarse desde un componente cliente.
+- [ x ] Existe `utils/supabase/server.ts` que exporta `createClient()` `async`, cableado a `cookies()`, sin lanzar error al importarse desde un Server Component.
+- [ x ] `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` están definidas en `.env.local` y documentadas (sin valores) en `.env.example`.
+- [ x ] `.env.local` no está versionado; `.env.example` sí.
+- [ x ] La verificación temporal de conexión (`auth.getUser()`) respondió sin error de credenciales/red durante la implementación.
+- [ x ] No queda en el repo ningún archivo ni código de prueba temporal de la verificación.
+- [ x ] No se han creado tablas, migraciones ni políticas en Supabase; el esquema `public` sigue vacío.
+- [ x ] No se ha modificado ningún componente, ruta ni dato existente (Home, biblioteca, salón, acerca, auth, `ArcadeProvider`, `games.ts`, `scores.ts`).
 
 ---
 
