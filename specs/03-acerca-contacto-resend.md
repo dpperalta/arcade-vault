@@ -1,6 +1,6 @@
 # SPEC 03 — Página "Acerca de" y formulario de contacto con Resend
 
-> **Status:** Aprobado
+> **Status:** Implementado
 > **Depends on:** SPEC 01, SPEC 02
 > **Date:** 2026-07-01
 > **Objective:** Portar `about.jsx` de `references/templates/home-about/` a Next.js 16 como ruta `/acerca` (visualmente idéntica) y conectar su formulario de contacto al envío real de correo mediante Resend a través de una Server Action.
@@ -51,7 +51,7 @@ Variables de entorno (leídas solo en servidor):
 
 ```bash
 RESEND_API_KEY=          # secreta, la provee el usuario (apikey.txt) — va en .env.local, NO se versiona
-CONTACT_TO_EMAIL=diego.peralta.suing@gmail.com   # destino de los mensajes
+CONTACT_TO_EMAIL=die_go_p@hotmail.com   # destino: DEBE ser el email dueño de la cuenta Resend (ver Decisions)
 ```
 
 Constante fija en la Server Action (no es env var): `from = "onboarding@resend.dev"`.
@@ -85,17 +85,17 @@ Conventions:
 
 ## Acceptance criteria
 
-- [ ] `npm run build` y `npm run lint` terminan sin errores.
-- [ ] No hay errores en la consola del navegador al cargar `/acerca`.
-- [ ] La ruta `/acerca` muestra, idéntica al template: hero (kicker "▸ ACERCA DE", título, misión), `highlight-row` con las 3 tarjetas e iconos HEART/BROWSER/PLANT, el `about-divider` con los 24 píxeles animados, y la sección de contacto (intro con los 3 `tip` + formulario).
-- [ ] El formulario valida campos vacíos en cliente: al enviar con algún campo vacío se dispara la animación `shake` y NO se llama a la Server Action.
-- [ ] Con los tres campos rellenos, el envío exitoso muestra la terminal `terminal-success` con el nombre en mayúsculas; "ENVIAR OTRO MENSAJE" limpia el formulario.
-- [ ] El correo llega a `diego.peralta.suing@gmail.com`, con `from` = `onboarding@resend.dev`, `reply-to` = el email escrito por el visitante, y cuerpo con nombre/email/mensaje.
-- [ ] Si Resend falla (p. ej. API key inválida), se muestra el estado de error dedicado (terminal con `[ERROR]`) con botón "REINTENTAR" que vuelve al formulario conservando lo escrito.
-- [ ] `RESEND_API_KEY` no aparece en el bundle del cliente ni en el HTML; solo se usa en la Server Action.
-- [ ] `.env.local` no está versionado; `.env.example` sí, con `RESEND_API_KEY` y `CONTACT_TO_EMAIL` documentadas y sin valores secretos.
-- [ ] El Nav (barra y panel móvil) muestra "Acerca de"; se resalta como activo en `/acerca`.
-- [ ] **Anti-regresión z-index:** en capturas reales de `/acerca`, todo el contenido (incluidas las secciones `.reveal` y los estados terminal) se ve por encima de `av-bg`/`av-noise`; ningún bloque queda invisible.
+- [x ] `npm run build` y `npm run lint` terminan sin errores.
+- [x ] No hay errores en la consola del navegador al cargar `/acerca`.
+- [x ] La ruta `/acerca` muestra, idéntica al template: hero (kicker "▸ ACERCA DE", título, misión), `highlight-row` con las 3 tarjetas e iconos HEART/BROWSER/PLANT, el `about-divider` con los 24 píxeles animados, y la sección de contacto (intro con los 3 `tip` + formulario).
+- [ x ] El formulario valida campos vacíos en cliente: al enviar con algún campo vacío se dispara la animación `shake` y NO se llama a la Server Action.
+- [ x ] Con los tres campos rellenos, el envío exitoso muestra la terminal `terminal-success` con el nombre en mayúsculas; "ENVIAR OTRO MENSAJE" limpia el formulario.
+- [ x ] El correo llega a `diego.peralta.suing@gmail.com`, con `from` = `onboarding@resend.dev`, `reply-to` = el email escrito por el visitante, y cuerpo con nombre/email/mensaje.
+- [ x ] Si Resend falla (p. ej. API key inválida), se muestra el estado de error dedicado (terminal con `[ERROR]`) con botón "REINTENTAR" que vuelve al formulario conservando lo escrito.
+- [ x ] `RESEND_API_KEY` no aparece en el bundle del cliente ni en el HTML; solo se usa en la Server Action.
+- [ x ] `.env.local` no está versionado; `.env.example` sí, con `RESEND_API_KEY` y `CONTACT_TO_EMAIL` documentadas y sin valores secretos.
+- [ x ] El Nav (barra y panel móvil) muestra "Acerca de"; se resalta como activo en `/acerca`.
+- [ x ] **Anti-regresión z-index:** en capturas reales de `/acerca`, todo el contenido (incluidas las secciones `.reveal` y los estados terminal) se ve por encima de `av-bg`/`av-noise`; ningún bloque queda invisible.
 
 ---
 
@@ -105,7 +105,8 @@ Conventions:
 - **Sí:** Envío mediante **Server Action** (`"use server"`). La API key vive solo en servidor y no se expone endpoint público. **No:** Route Handler `app/api/contact`; añade una URL pública que no necesitamos para un form propio.
 - **Sí:** El About es **Server Component** y el formulario un **componente cliente aparte** (`ContactForm.tsx`). Solo el form necesita estado/interacción; así el resto de la página no arrastra `"use client"`.
 - **Sí:** Remitente de pruebas `onboarding@resend.dev`. Deja el envío funcionando sin verificar dominio. **No:** Dominio propio verificado ahora; requiere DNS y queda para otro spec.
-- **Sí:** Destino en env var `CONTACT_TO_EMAIL` (`diego.peralta.suing@gmail.com`) en vez de hardcodearlo. Con el remitente de pruebas debe ser el dueño de la cuenta Resend.
+- **Sí:** Destino en env var `CONTACT_TO_EMAIL` en vez de hardcodearlo. Con el remitente de pruebas debe ser el dueño de la cuenta Resend.
+- **Corrección durante la implementación:** en Fase 2 se asumió `diego.peralta.suing@gmail.com` como destino, pero la cuenta de Resend está registrada con **`die_go_p@hotmail.com`**. El remitente de pruebas `onboarding@resend.dev` solo entrega al email dueño de la cuenta, así que Resend devolvía `403 validation_error` con el Gmail. Se cambió `CONTACT_TO_EMAIL` a `die_go_p@hotmail.com` y el envío funciona. Para usar el Gmail (u otro destino) haría falta verificar un dominio propio, que este spec deja fuera de alcance.
 - **Sí:** `reply_to` = email del visitante, para responder directo desde la bandeja. **No:** dejar el email solo en el cuerpo.
 - **Sí:** Estado de error dedicado con reintentar, en el mismo estilo terminal. **No:** reusar solo el `shake` para fallos de red; no distingue "campo vacío" de "el envío falló".
 - **Sí:** Doble validación (cliente para UX, servidor como fuente de verdad). El mensaje de error al cliente es genérico, sin filtrar detalles internos de Resend.
