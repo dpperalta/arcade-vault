@@ -70,6 +70,14 @@ export default function AsteroidsPlayer() {
             <div className="l">Nivel</div>
             <div className="v">{String(gs.level).padStart(2, "0")}</div>
           </div>
+          {gs.tripleShot > 0 && (
+            <div className="hud-stat">
+              <div className="l">Disparo 3x</div>
+              <div className="v" style={{ color: "var(--cyan)" }}>
+                {gs.tripleShot.toFixed(1)}s
+              </div>
+            </div>
+          )}
         </div>
         <div className="hud-actions">
           <button
@@ -107,6 +115,29 @@ export default function AsteroidsPlayer() {
               display: "block",
             }}
           />
+          {paused && (
+            <div
+              className="crt-content"
+              style={{ background: "rgba(0,0,0,0.6)", zIndex: 5 }}
+            >
+              <div>
+                <div className="pixel neon-yellow" style={{ fontSize: 22 }}>
+                  EN PAUSA
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: 11,
+                    color: "var(--ink-dim)",
+                    marginTop: 10,
+                    letterSpacing: "0.16em",
+                  }}
+                >
+                  PULSA REANUDAR PARA CONTINUAR
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <div className="crt-bottom">
           <span className="led">SEÑAL OK</span>
