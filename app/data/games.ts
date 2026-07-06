@@ -13,6 +13,7 @@ export interface Game {
   color: GameColor; // color del botón JUGAR
   best: number; // mejor puntuación global
   plays: string; // partidas, formateado ("12.4K")
+  playHref?: string; // destino de "JUGAR AHORA". Default: `/jugar/${id}`. Para asteroids: "/juego/asteroids/jugar"
 }
 
 export const GAMES: Game[] = [
@@ -81,6 +82,18 @@ export const GAMES: Game[] = [
     color: "yellow",
     best: 41200,
     plays: "15.6K",
+  },
+  {
+    id: "asteroids",
+    title: "ASTEROIDS",
+    short: "Rota, propúlsate y pulveriza rocas en gravedad cero.",
+    long: "El clásico de culto, real y jugable: pilota una nave triangular por un campo de asteroides toroidal, divídelos en fragmentos cada vez menores y sobrevive con 3 vidas. Recoge el power-up 3x para disparo triple.",
+    cat: "SHOOTER",
+    cover: "cover-asteroids",
+    color: "yellow",
+    best: 41200,
+    plays: "0",
+    playHref: "/juego/asteroids/jugar",
   },
   {
     id: "ranaria",
