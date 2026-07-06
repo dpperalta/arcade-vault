@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
+import { useArcade } from "../../../components/ArcadeProvider";
 import {
   createAsteroids,
   type AsteroidsHandle,
@@ -21,11 +22,17 @@ const INITIAL_STATE: GameState = {
 
 export default function AsteroidsPlayer() {
   const router = useRouter();
+  const { user, saveScore } = useArcade();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<AsteroidsHandle | null>(null);
 
   const [gs, setGs] = useState<GameState>(INITIAL_STATE);
+  const [over, setOver] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
+  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
 
   // Monta el motor una sola vez sobre el canvas ya renderizado.
   useEffect(() => {
@@ -34,8 +41,9 @@ export default function AsteroidsPlayer() {
 
     const handle = createAsteroids(canvas, {
       onState: (s) => setGs(s),
-      onGameOver: () => {
-        // El modal de fin se cablea en el Paso 7.
+      onGameOver: (fs) => {
+        setFinalScore(fs);
+        setOver(true);
       },
     });
     handleRef.current = handle;
@@ -47,6 +55,14 @@ export default function AsteroidsPlayer() {
   }, []);
 
   const paused = gs.phase === "paused";
+  const name = nameEdit ?? user?.name ?? "INVITADO";
+
+  const restart = () => {
+    setOver(false);
+    setSaved(false);
+    setNameEdit(null);
+    handleRef.current?.restart();
+  };
 
   return (
     <div className="av-player fade-in">
@@ -55,7 +71,7 @@ export default function AsteroidsPlayer() {
           <div className="hud-stat">
             <div className="l">Jugador</div>
             <div className="v" style={{ color: "var(--ink)" }}>
-              INVITADO
+              {user?.name ?? "INVITADO"}
             </div>
           </div>
           <div className="hud-stat">
@@ -145,6 +161,49 @@ export default function AsteroidsPlayer() {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {over && (
+        <div className="modal-bd">
+          <div className="modal">
+            <h2>FIN DEL JUEGO</h2>
+            <div className="final-label">PUNTUACIÓN FINAL</div>
+            <div className="final">{finalScore.toLocaleString("es-ES")}</div>
+            {!saved ? (
+              <div className="input-row">
+                <input
+                  value={name}
+                  onChange={(e) =>
+                    setNameEdit(e.target.value.toUpperCase().slice(0, 10))
+                  }
+                  placeholder="TUS INICIALES"
+                />
+                <button
+                  className="btn yellow"
+                  onClick={() => {
+                    saveScore({ game: "asteroids", score: finalScore, name });
+                    setSaved(true);
+                  }}
+                >
+                  GUARDAR PUNTUACIÓN
+                </button>
+              </div>
+            ) : (
+              <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+            )}
+            <div className="actions">
+              <button className="btn" onClick={restart}>
+                JUGAR DE NUEVO
+              </button>
+              <button
+                className="btn magenta"
+                onClick={() => router.push("/biblioteca")}
+              >
+                VOLVER AL VAULT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
