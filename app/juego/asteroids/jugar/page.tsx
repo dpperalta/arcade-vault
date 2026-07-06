@@ -48,7 +48,12 @@ export default function AsteroidsPlayer() {
     });
     handleRef.current = handle;
 
+    // Mundo responsive: re-mide y reescala cuando cambia el tamaño del canvas.
+    const ro = new ResizeObserver(() => handle.resize());
+    ro.observe(canvas);
+
     return () => {
+      ro.disconnect();
       handle.destroy();
       handleRef.current = null;
     };
