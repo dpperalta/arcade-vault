@@ -15,6 +15,23 @@ export interface LoadResult<T> {
   source: "db" | "fallback";
 }
 
+/** Ms tras los que una lectura sin respuesta se considera BD caída → fallback. */
+const DB_TIMEOUT_MS = 4000;
+
+/**
+ * Resuelve la promesa de una consulta o rechaza al vencer el timeout.
+ * Protege contra una BD que ni responde ni falla (petición colgada), para
+ * que el fallback se dispare siempre en lugar de dejar la UI congelada.
+ */
+function withTimeout<T>(query: PromiseLike<T>, ms: number): Promise<T> {
+  return Promise.race([
+    Promise.resolve(query),
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error("db-timeout")), ms),
+    ),
+  ]);
+}
+
 /** Semilla usada por el fallback de las puntuaciones (idéntica a la del detalle). */
 function scoresSeed(gameId: string): number {
   return gameId.length * 17 + 3;
@@ -62,10 +79,13 @@ function mapScores(rows: ScoreDbRow[]): ScoreRow[] {
 export async function fetchGames(): Promise<LoadResult<Game[]>> {
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("games")
-      .select("*")
-      .order("sort_order", { ascending: true });
+    const { data, error } = await withTimeout(
+      supabase
+        .from("games")
+        .select("*")
+        .order("sort_order", { ascending: true }),
+      DB_TIMEOUT_MS,
+    );
 
     if (error || !data || data.length === 0) {
       return { rows: GAMES, source: "fallback" };
@@ -86,12 +106,15 @@ export async function fetchScores(
 ): Promise<LoadResult<ScoreRow[]>> {
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from("scores")
-      .select("*")
-      .eq("game_id", gameId)
-      .order("score", { ascending: false })
-      .limit(limit);
+    const { data, error } = await withTimeout(
+      supabase
+        .from("scores")
+        .select("*")
+        .eq("game_id", gameId)
+        .order("score", { ascending: false })
+        .limit(limit),
+      DB_TIMEOUT_MS,
+    );
 
     if (error || !data || data.length === 0) {
       return {
@@ -119,12 +142,15 @@ export async function insertScore(entry: {
 }): Promise<{ ok: boolean }> {
   try {
     const supabase = createClient();
-    const { error } = await supabase.from("scores").insert({
-      game_id: entry.gameId,
-      player_name: entry.playerName,
-      score: entry.score,
-      user_id: null,
-    });
+    const { error } = await withTimeout(
+      supabase.from("scores").insert({
+        game_id: entry.gameId,
+        player_name: entry.playerName,
+        score: entry.score,
+        user_id: null,
+      }),
+      DB_TIMEOUT_MS,
+    );
     return { ok: !error };
   } catch {
     return { ok: false };
