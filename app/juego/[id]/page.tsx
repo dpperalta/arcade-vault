@@ -1,19 +1,26 @@
+"use client";
+
+import { use } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { GAMES } from "../../data/games";
-import { seededScores } from "../../data/scores";
+import { useGames, useScores } from "../../data/useCatalog";
 import Leaderboard from "../../components/Leaderboard";
 
-export default async function GameDetail({
+export default function GameDetail({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const game = GAMES.find((g) => g.id === id);
-  if (!game) notFound();
+  const { id } = use(params);
+  const { games, loading } = useGames();
+  const { scores } = useScores(id, 10);
 
-  const scores = seededScores(id.length * 17 + 3, 10);
+  const game = games.find((g) => g.id === id);
+  // Sólo declaramos 404 cuando ya tenemos el catálogo cargado y no aparece.
+  if (!game) {
+    if (!loading) notFound();
+    return null;
+  }
 
   return (
     <div className="av-detail fade-in">

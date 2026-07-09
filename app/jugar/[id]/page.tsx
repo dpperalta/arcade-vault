@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { notFound, useRouter } from "next/navigation";
 import { GAMES } from "../../data/games";
+import { insertScore } from "../../data/catalog";
 import { useArcade } from "../../components/ArcadeProvider";
 
 export default function GamePlayer({
@@ -12,7 +13,7 @@ export default function GamePlayer({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { user, saveScore } = useArcade();
+  const { user } = useArcade();
 
   const game = GAMES.find((g) => g.id === id);
 
@@ -23,6 +24,7 @@ export default function GamePlayer({
   // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
   const [nameEdit, setNameEdit] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveWarn, setSaveWarn] = useState(false);
 
   // Nivel derivado de la puntuación (sube cada 2500 puntos).
   const level = 1 + Math.floor(score / 2500);
@@ -45,6 +47,7 @@ export default function GamePlayer({
     setPaused(false);
     setOver(false);
     setSaved(false);
+    setSaveWarn(false);
     setNameEdit(null);
   };
 
@@ -144,8 +147,13 @@ export default function GamePlayer({
                 />
                 <button
                   className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: game.id, score, name });
+                  onClick={async () => {
+                    const { ok } = await insertScore({
+                      gameId: game.id,
+                      playerName: name,
+                      score,
+                    });
+                    setSaveWarn(!ok);
                     setSaved(true);
                   }}
                 >
@@ -153,7 +161,22 @@ export default function GamePlayer({
                 </button>
               </div>
             ) : (
-              <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+              <>
+                <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+                {saveWarn && (
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 10,
+                      color: "var(--ink-dim)",
+                      marginTop: 8,
+                      letterSpacing: "0.12em",
+                    }}
+                  >
+                    (sin conexión — no se pudo enviar al servidor)
+                  </div>
+                )}
+              </>
             )}
             <div className="actions">
               <button className="btn" onClick={restart}>

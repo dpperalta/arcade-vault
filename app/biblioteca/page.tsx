@@ -1,20 +1,22 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CATS, GAMES } from "../data/games";
+import { CATS } from "../data/games";
+import { useGames } from "../data/useCatalog";
 import GameCard from "../components/GameCard";
 
 export default function Library() {
+  const { games } = useGames();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<(typeof CATS)[number]>("TODOS");
 
   const filtered = useMemo(() => {
-    return GAMES.filter(
+    return games.filter(
       (g) =>
         (cat === "TODOS" || g.cat === cat) &&
         g.title.toLowerCase().includes(q.toLowerCase()),
     );
-  }, [q, cat]);
+  }, [games, q, cat]);
 
   return (
     <div className="fade-in">
@@ -62,7 +64,11 @@ export default function Library() {
           >
             <div
               className="pixel"
-              style={{ fontSize: 14, color: "var(--magenta)", marginBottom: 12 }}
+              style={{
+                fontSize: 14,
+                color: "var(--magenta)",
+                marginBottom: 12,
+              }}
             >
               NO HAY RESULTADOS
             </div>

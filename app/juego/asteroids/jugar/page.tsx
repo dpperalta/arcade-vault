@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
+import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
 import {
   createAsteroids,
@@ -22,7 +23,7 @@ const INITIAL_STATE: GameState = {
 
 export default function AsteroidsPlayer() {
   const router = useRouter();
-  const { user, saveScore } = useArcade();
+  const { user } = useArcade();
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<AsteroidsHandle | null>(null);
@@ -33,6 +34,7 @@ export default function AsteroidsPlayer() {
   // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
   const [nameEdit, setNameEdit] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [saveWarn, setSaveWarn] = useState(false);
 
   // Monta el motor una sola vez sobre el canvas ya renderizado.
   useEffect(() => {
@@ -65,6 +67,7 @@ export default function AsteroidsPlayer() {
   const restart = () => {
     setOver(false);
     setSaved(false);
+    setSaveWarn(false);
     setNameEdit(null);
     handleRef.current?.restart();
   };
@@ -184,8 +187,13 @@ export default function AsteroidsPlayer() {
                 />
                 <button
                   className="btn yellow"
-                  onClick={() => {
-                    saveScore({ game: "asteroids", score: finalScore, name });
+                  onClick={async () => {
+                    const { ok } = await insertScore({
+                      gameId: "asteroids",
+                      playerName: name,
+                      score: finalScore,
+                    });
+                    setSaveWarn(!ok);
                     setSaved(true);
                   }}
                 >
@@ -193,7 +201,22 @@ export default function AsteroidsPlayer() {
                 </button>
               </div>
             ) : (
-              <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+              <>
+                <div className="toast-saved">▸ PUNTUACIÓN GUARDADA_</div>
+                {saveWarn && (
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 10,
+                      color: "var(--ink-dim)",
+                      marginTop: 8,
+                      letterSpacing: "0.12em",
+                    }}
+                  >
+                    (sin conexión — no se pudo enviar al servidor)
+                  </div>
+                )}
+              </>
             )}
             <div className="actions">
               <button className="btn" onClick={restart}>

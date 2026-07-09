@@ -1,17 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { GAMES } from "../data/games";
-import { seededScores } from "../data/scores";
+import { useGames, useScores } from "../data/useCatalog";
 import { useArcade } from "../components/ArcadeProvider";
 
 export default function HallOfFame() {
   const { user } = useArcade();
+  const { games } = useGames();
   const [tab, setTab] = useState(GAMES[0].id);
 
-  const rows = useMemo(() => seededScores(tab.length * 23 + 7, 12), [tab]);
-  const game = GAMES.find((g) => g.id === tab)!;
+  const { scores: rows } = useScores(tab, 12);
+  const game =
+    games.find((g) => g.id === tab) ?? GAMES.find((g) => g.id === tab)!;
   const youRank = user ? Math.floor(8 + (tab.length % 4)) : null;
   const youScore = user ? rows[5]?.score - 2400 : null;
 
@@ -25,7 +27,7 @@ export default function HallOfFame() {
       </div>
 
       <div className="hall-tabs">
-        {GAMES.map((g) => (
+        {games.map((g) => (
           <button
             key={g.id}
             className={"chip" + (tab === g.id ? " active" : "")}
@@ -46,7 +48,11 @@ export default function HallOfFame() {
         <div className="podium-slot gold">
           <div
             className="pixel"
-            style={{ fontSize: 9, color: "var(--gold)", letterSpacing: "0.18em" }}
+            style={{
+              fontSize: 9,
+              color: "var(--gold)",
+              letterSpacing: "0.18em",
+            }}
           >
             CAMPEÓN
           </div>
@@ -91,9 +97,7 @@ export default function HallOfFame() {
         ))}
         {user && (
           <>
-            <div className="tr you-label">
-              ▸ TU MEJOR MARCA EN {game.title}
-            </div>
+            <div className="tr you-label">▸ TU MEJOR MARCA EN {game.title}</div>
             <div
               className="tr you"
               style={{ animationDelay: `${rows.length * 50 + 50}ms` }}
