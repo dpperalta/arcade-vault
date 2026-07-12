@@ -40,6 +40,18 @@ export const GAMES: Game[] = [
     plays: "31.8K",
   },
   {
+    id: "tetris",
+    title: "TETRIS",
+    short: "Encaja las piezas y limpia líneas antes de que el muro te sepulte.",
+    long: "El clásico de encaje, real y jugable: rota y deja caer tetrominós —más una pieza tuerca especial— sobre una rejilla de 10×20. Usa la pieza fantasma para afinar, el hard-drop para rematar y limpia líneas mientras la velocidad sube cada 10 líneas.",
+    cat: "PUZZLE",
+    cover: "cover-tetris",
+    color: "cyan",
+    best: 184220,
+    plays: "0",
+    playHref: "/juego/tetris/jugar",
+  },
+  {
     id: "serpentina",
     title: "SERPENTINA",
     short: "Crece sin morder tu propia cola.",
