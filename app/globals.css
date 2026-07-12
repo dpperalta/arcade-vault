@@ -595,6 +595,38 @@ a { color: inherit; text-decoration: none; }
   image-rendering: pixelated;
 }
 
+/* Arkanoid — muro magenta 2D con mortero, pelota a media trayectoria con
+   estela y paleta cian esperando debajo (el momento del rebote). Distinta de
+   cover-bricks (franjas horizontales planas). */
+.cover-arkanoid {
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255,0,110,0.20), transparent 62%),
+    repeating-linear-gradient(0deg, rgba(0,245,255,0.05) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #1a0016, #0a0a18);
+}
+.cover-arkanoid::after {
+  content: "";
+  position: absolute;
+  inset: 12% 14% 56% 14%;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,0.6) 0 2px, transparent 2px 28px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,0.6) 0 2px, transparent 2px 16px),
+    repeating-linear-gradient(0deg, var(--magenta) 0 16px, #b8004f 16px 32px);
+  filter: drop-shadow(0 0 9px rgba(255,0,110,0.55));
+  image-rendering: pixelated;
+}
+.cover-arkanoid::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 63% 62%, #fff 0 6px, transparent 7px),
+    radial-gradient(circle at 56% 52%, rgba(255,255,255,0.4) 0 4px, transparent 5px),
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,0.2) 0 3px, transparent 4px),
+    linear-gradient(var(--cyan), var(--cyan)) 66% 87% / 72px 9px no-repeat;
+  filter: drop-shadow(0 0 7px rgba(0,245,255,0.6));
+}
+
 /* ===== detail screen ===== */
 .av-detail {
   display: grid;
