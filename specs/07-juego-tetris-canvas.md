@@ -1,6 +1,6 @@
 # SPEC 07 — Juego Tetris en canvas real
 
-> **Status:** Borrador
+> **Status:** Implementado
 > **Depends on:** SPEC 01 (HUD, CRT, modal, `.av-player`), SPEC 02 (Home/biblioteca), SPEC 05 (patrón motor+página de Asteroids), SPEC 06 (catálogo y leaderboard en Supabase)
 > **Date:** 2026-07-12
 > **Objective:** Portar el Tetris de `references/started-games/03-tetris/game.js` a un motor TypeScript client-only que corre en `/juego/tetris/jugar`, integrado con el HUD, el marco CRT y el guardado de puntuaciones, y publicarlo como ficha nueva `tetris` en el catálogo (BD + fallback) conviviendo con el mock `caida`.
