@@ -1,7 +1,9 @@
 # checklist.md — apoyo técnico de `/nuevo-juego`
 
-Referencia que consulta el `SKILL.md` durante las fases 3 (motor) y 7 (Supabase). No es texto para copiar literal:
-es la forma que hay que respetar. La plantilla viva de código sigue siendo
+Referencia técnica que consulta el `SKILL.md` al **redactar el spec** (Data model + Implementation
+plan de la Fase 3): este detalle debe verterse en el spec para que la implementación posterior
+(manual o vía `/spec-impl`) no tenga que consultar esta skill. No es texto para copiar literal: es la
+forma que hay que respetar. La plantilla viva de código sigue siendo
 `app/juego/asteroids/jugar/engine.ts` y `app/juego/asteroids/jugar/page.tsx`.
 
 ---
