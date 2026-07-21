@@ -213,6 +213,12 @@ export default function ArkanoidPlayer() {
                 JUGAR DE NUEVO
               </button>
               <button
+                className="btn cyan"
+                onClick={() => router.push("/juego/arkanoid")}
+              >
+                VER LEADERBOARD
+              </button>
+              <button
                 className="btn magenta"
                 onClick={() => router.push("/biblioteca")}
               >
