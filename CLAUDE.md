@@ -20,15 +20,64 @@ npm run lint    # ESLint (flat config, eslint-config-next core-web-vitals + type
 There is no test runner configured yet.
 
 ## Skills
+
 Usa siempre /frontend-desgin de Anthropic para el diseño de interfaces de usuario
+
+Skills propias del repo, en `.claude/skills/`:
+
+- **`/spec`** — diseña un spec nuevo sección por sección, preguntando hasta eliminar ambigüedad. Guarda en `specs/NN-<slug>.md` en estado `Borrador`.
+- **`/spec-impl`** — implementa un spec ya `Aprobado`, paso a paso.
+- **`/nuevo-juego`** — diseña (sin escribir código) el spec de integración de un juego jugable nuevo con su leaderboard, siguiendo el patrón que dejaron SPEC 05 (Asteroids) y SPEC 06 (catálogo/leaderboard en Supabase). Produce únicamente el `.md` en `specs/`; la implementación se hace después con `/spec-impl`.
 
 ## Architecture
 
 - **App Router** under `app/`. `app/layout.tsx` is the root layout (Geist fonts via `next/font/google`, Tailwind via `app/globals.css`); `app/page.tsx` is the home route. Add routes as nested folders with `page.tsx`/`layout.tsx`.
 - **Styling**: Tailwind CSS v4 through the PostCSS plugin (`@tailwindcss/postcss`, configured in `postcss.config.mjs`). No `tailwind.config.js` — v4 is configured in CSS.
 - **TypeScript**: `strict` mode. Import alias `@/*` resolves to the project root (e.g. `@/app/...`).
-- **Domain**: Arcade Vault is an online platform where users play games and compete for the highest score. The codebase is currently the starter scaffold; product features are not yet built.
+- **Domain**: Arcade Vault es una plataforma online donde los usuarios juegan y compiten por el mejor puntaje. Ya no es solo el scaffold inicial: tiene catálogo, biblioteca, salón de la fama, auth y cuatro juegos jugables en canvas con leaderboard real en Supabase.
+
+### Rutas principales (`app/`)
+
+- `page.tsx` — home/landing.
+- `biblioteca/page.tsx` — catálogo de juegos (grid de `GameCard`).
+- `salon/page.tsx` — salón de la fama / leaderboard global.
+- `acerca/page.tsx` + `acerca/actions.ts` — página "Acerca de" con formulario de contacto (Server Action que envía correo vía **Resend**).
+- `auth/page.tsx` — login/registro (usa `ArcadeProvider` para el estado de sesión en cliente).
+- `juego/[id]/page.tsx` — ficha de detalle de un juego del catálogo.
+- `jugar/[id]/page.tsx` — placeholder de "jugar" para juegos que aún no tienen motor propio.
+- `juego/<slug>/jugar/` — juegos **reales, jugables en canvas**, cada uno con `engine.ts` (motor headless, client-only) + `page.tsx` (wrapper `"use client"` que instancia el motor en `useEffect`). Slugs implementados: **`asteroids`**, **`tetris`**, **`arkanoid`**, **`snake`** (este último añade `atlas.ts` para el sprite atlas).
+(see `references\juegos-implementados.md`) when you need to check which games are implemented and how to implement new ones, review that list.
+
+### Datos y Supabase (`app/data/`)
+
+- `games.ts` — catálogo mock hardcodeado (`GAMES`), usado como **fallback** si Supabase no responde.
+- `scores.ts` — puntuaciones mock deterministas (`seededScores`), fallback del leaderboard.
+- `catalog.ts` / `useCatalog.ts` — acceso real a Supabase (`@/utils/supabase/client`, tablas `games` y `scores`). Todo `fetch*` tiene timeout (`DB_TIMEOUT_MS`) y cae al mock si la BD falla, no responde o no tiene filas — así la UI nunca se cuelga ni queda vacía. `insertScore()` escribe puntuaciones reales (por ahora `user_id` siempre `null`, sin auth ligado todavía).
+- El patrón "un juego nuevo" es: motor en canvas → página cliente → ficha en `GAMES` → portada CSS (`cover-<slug>`, diseñada con `/frontend-design`) → fila en `games` + seed en `scores` en Supabase. Ver SPEC 05, 06, 07, 08, 09 y la skill `/nuevo-juego`.
+
+### Componentes (`app/components/`)
+
+- `ArcadeProvider.tsx` — contexto cliente con el estado de sesión/usuario (`login`, etc.).
+- `Nav.tsx`, `Footer.tsx` — navegación y pie compartidos.
+- `GameCard.tsx` — tarjeta de juego del catálogo.
+- `Leaderboard.tsx` — tabla de puntuaciones (usada en detalle de juego y salón).
+- `ContactForm.tsx` — formulario de "Acerca de" que llama a `acerca/actions.ts` (Resend).
+- `Reveal.tsx` — wrapper de animación de entrada/scroll.
 
 ## Workflow: Spec-Driven Design
 
 This project follows spec-driven design using the `/spec` and `/spec-impl` skills from [Klerith/fernando-skills](https://github.com/Klerith/fernando-skills). Write/refine a spec with `/spec` before implementing it with `/spec-impl`.
+
+Specs existentes en `specs/` (orden cronológico, cada una construye sobre la anterior):
+
+1. `01-mvp-visual.md` — scaffold visual inicial.
+2. `02-home-landing.md` — home/landing.
+3. `03-acerca-contacto-resend.md` — página "Acerca de" + formulario de contacto vía Resend.
+4. `04-integracion-supabase.md` — integración base de Supabase (cliente, tipos, tablas `games`/`scores`).
+5. `05-juego-asteroids-canvas.md` — primer juego real en canvas (Asteroids); establece el patrón motor/página que siguen los siguientes.
+6. `06-catalogo-y-leaderboard-supabase.md` — catálogo y leaderboard reales leyendo/escribiendo en Supabase, con fallback a los mocks.
+7. `07-juego-tetris-canvas.md` — Tetris.
+8. `08-arkanoid.md` — Arkanoid.
+9. `09-snake.md` — Snake.
+
+Para integrar un juego nuevo, usa `/nuevo-juego` en vez de escribir el spec a mano — replica el patrón de las specs 05/06 automáticamente.
