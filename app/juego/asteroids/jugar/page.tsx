@@ -223,6 +223,12 @@ export default function AsteroidsPlayer() {
                 JUGAR DE NUEVO
               </button>
               <button
+                className="btn cyan"
+                onClick={() => router.push("/juego/asteroids")}
+              >
+                VER LEADERBOARD
+              </button>
+              <button
                 className="btn magenta"
                 onClick={() => router.push("/biblioteca")}
               >

@@ -210,6 +210,12 @@ export default function TetrisPlayer() {
                 JUGAR DE NUEVO
               </button>
               <button
+                className="btn cyan"
+                onClick={() => router.push("/juego/tetris")}
+              >
+                VER LEADERBOARD
+              </button>
+              <button
                 className="btn magenta"
                 onClick={() => router.push("/biblioteca")}
               >
