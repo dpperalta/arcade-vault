@@ -129,6 +129,18 @@ export const GAMES: Game[] = [
     best: 24,
     plays: "4.2K",
   },
+  {
+    id: "arkanoid",
+    title: "ARKANOID",
+    short: "Rompe el muro de bloques rebotando la pelota con tu paleta.",
+    long: "El clásico rompe-muros, real y jugable: mueve la paleta con las flechas o el ratón, rebota la pelota y pulveriza la rejilla de bloques a lo largo de 5 niveles cada vez más rápidos. Tienes 3 vidas; limpia el último muro para completar el juego.",
+    cat: "ARCADE",
+    cover: "cover-arkanoid",
+    color: "magenta",
+    best: 28450,
+    plays: "0",
+    playHref: "/juego/arkanoid/jugar",
+  },
 ];
 
 export const CATS = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"] as const;
