@@ -141,6 +141,18 @@ export const GAMES: Game[] = [
     plays: "0",
     playHref: "/juego/arkanoid/jugar",
   },
+  {
+    id: "snake",
+    title: "SNAKE",
+    short: "Crece comiendo fruta sin morderte la cola ni chocar.",
+    long: "El clásico de la serpiente, real y jugable: guía una serpiente de neón por una rejilla de 24×18, devora fruta para crecer y sube de nivel cada 5 piezas mientras el ritmo se acelera sin piedad. Un choque con el muro o con tu propia cola y se acabó.",
+    cat: "ARCADE",
+    cover: "cover-snake-fruit",
+    color: "cyan",
+    best: 12500,
+    plays: "0",
+    playHref: "/juego/snake/jugar",
+  },
 ];
 
 export const CATS = ["TODOS", "ARCADE", "PUZZLE", "SHOOTER", "VERSUS"] as const;
