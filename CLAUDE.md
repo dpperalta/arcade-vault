@@ -29,6 +29,16 @@ Skills propias del repo, en `.claude/skills/`:
 - **`/spec-impl`** — implementa un spec ya `Aprobado`, paso a paso.
 - **`/nuevo-juego`** — diseña (sin escribir código) el spec de integración de un juego jugable nuevo con su leaderboard, siguiendo el patrón que dejaron SPEC 05 (Asteroids) y SPEC 06 (catálogo/leaderboard en Supabase). Produce únicamente el `.md` en `specs/`; la implementación se hace después con `/spec-impl`.
 
+## Subagentes
+
+Subagentes propios del repo, en `.claude/agents/`:
+
+- **`game-planer`** — planifica y decide **qué** juego nuevo conviene agregar a continuación, considerando únicamente candidatos que encajen con el patrón de los juegos ya implementados (mismo motor canvas headless `engine.ts` + `page.tsx`, misma complejidad, categorías `ARCADE|PUZZLE|SHOOTER|VERSUS`). Solo recomienda: no escribe specs ni código ni invoca `/nuevo-juego`. Mantiene memoria de sugerencias previas en `.claude/agents/game-planer/memoria.md` y publica la recomendación vigente (formato TODO) en `references/sugerencias-juegos-todo.md`. El flujo es: `game-planer` decide el juego → el usuario aprueba → `/nuevo-juego` escribe el spec → `/spec-impl` lo implementa.
+
+- **`game-jam`** — recibe un **tema** y genera **automáticamente** (sin la ronda de preguntas de `/nuevo-juego`) specs de juegos que encajan con el patrón del repo. Por cada juego que deriva del tema crea una carpeta `specs/game-jam/<game-id>/` con **≥2 archivos de spec completos y end-to-end** (formato SPEC 07/08/09, estado `Borrador`) que son **variantes alternativas del mismo juego** (misma identidad temática, distinta mecánica); el usuario revisa y elige **una** para implementar. Solo escribe `.md`: no toca código, catálogo ni base de datos. El flujo es: `game-jam` genera variantes por tema → el usuario elige una y la marca `Aprobado` → `/spec-impl` la implementa. Se diferencia de `game-planer` (que solo recomienda qué juego, sin escribir specs) y de `/nuevo-juego` (que escribe un único spec preguntando bloque a bloque).
+
+- **`skin-designer`** — recibe un juego **ya implementado** (`app/juego/<slug>/jugar/`) y garantiza que ofrezca **al menos 3 skins** seleccionables: **Neon**, **Retro** y **Clásico** (Clásico = default). Primero **valida** contra la convención "paleta por engine + selector UI" (el `engine.ts` exporta `SkinName` + `SKINS: Record<SkinName, Palette>`, el motor acepta `skin?` con default `clasico` y expone `setSkin`, y `page.tsx` muestra un selector con Clásico preseleccionado) y, si falta algo, lo **implementa**: extrae los colores hardcodeados a las paletas (el skin `clasico` debe quedar pixel-idéntico al look actual), crea `neon`/`retro`, cablea la opción de tema y añade el selector. Solo cambia apariencia: **no** altera jugabilidad, catálogo ni base de datos. Verifica con capturas los 3 skins. A diferencia de `game-planer`/`game-jam` (que operan sobre juegos nuevos vía specs), `skin-designer` opera sobre un juego existente para dotarlo de skins.
+
 ## Architecture
 
 - **App Router** under `app/`. `app/layout.tsx` is the root layout (Geist fonts via `next/font/google`, Tailwind via `app/globals.css`); `app/page.tsx` is the home route. Add routes as nested folders with `page.tsx`/`layout.tsx`.
@@ -46,7 +56,7 @@ Skills propias del repo, en `.claude/skills/`:
 - `juego/[id]/page.tsx` — ficha de detalle de un juego del catálogo.
 - `jugar/[id]/page.tsx` — placeholder de "jugar" para juegos que aún no tienen motor propio.
 - `juego/<slug>/jugar/` — juegos **reales, jugables en canvas**, cada uno con `engine.ts` (motor headless, client-only) + `page.tsx` (wrapper `"use client"` que instancia el motor en `useEffect`). Slugs implementados: **`asteroids`**, **`tetris`**, **`arkanoid`**, **`snake`** (este último añade `atlas.ts` para el sprite atlas).
-(see `references\juegos-implementados.md`) when you need to check which games are implemented and how to implement new ones, review that list.
+  (see `references\juegos-implementados.md`) when you need to check which games are implemented and how to implement new ones, review that list.
 
 ### Datos y Supabase (`app/data/`)
 

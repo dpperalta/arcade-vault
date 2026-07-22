@@ -10,6 +10,58 @@
 // IMPORTANTE: este módulo es client-only. No accede a document/window en el
 // import; todo el acceso al DOM ocurre dentro de createAsteroids().
 
+// ── Skins / paletas ───────────────────────────────────────────────────────────
+export type SkinName = "clasico" | "neon" | "retro";
+
+export interface Palette {
+  bg: string; // fondo del canvas
+  ship: string; // trazo de la nave
+  thruster: string; // llama del propulsor (incluye su propio alpha)
+  bullet: string; // relleno de las balas
+  asteroid: string; // trazo de los asteroides
+  powerup: string; // trazo + texto del power-up 3x
+  particle: string; // componentes "r, g, b" (el alpha se calcula por frame)
+  glow: number; // radio de shadowBlur para el efecto brillo (0 = sin brillo)
+}
+
+export const SKINS: Record<SkinName, Palette> = {
+  // Fiel al look original: extraído tal cual de los literales hardcodeados.
+  clasico: {
+    bg: "#000",
+    ship: "#fff",
+    thruster: "rgba(255, 130, 0, 0.85)",
+    bullet: "#fff",
+    asteroid: "#fff",
+    powerup: "#0ff",
+    particle: "255, 255, 255",
+    glow: 0,
+  },
+  // Variante brillante, saturada, con glow.
+  neon: {
+    bg: "#05010f",
+    ship: "#00f0ff",
+    thruster: "rgba(255, 90, 200, 0.9)",
+    bullet: "#fdff5a",
+    asteroid: "#ff2fd0",
+    powerup: "#7dff3a",
+    particle: "255, 120, 255",
+    glow: 12,
+  },
+  // Variante apagada tipo CRT fosforo ámbar/verde, contraste bajo.
+  retro: {
+    bg: "#0d0a02",
+    ship: "#ffb000",
+    thruster: "rgba(255, 140, 0, 0.7)",
+    bullet: "#ffd24a",
+    asteroid: "#8f9f4f",
+    powerup: "#c8d24a",
+    particle: "210, 170, 70",
+    glow: 2,
+  },
+};
+
+const DEFAULT_SKIN: SkinName = "clasico";
+
 // ── Contrato público ──────────────────────────────────────────────────────────
 export type GamePhase = "playing" | "dead" | "paused" | "gameover";
 
@@ -27,12 +79,14 @@ export interface AsteroidsHandle {
   restart(): void;
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y reescala el mundo
+  setSkin(name: SkinName): void; // cambia el tema visual en vivo
   destroy(): void; // cancela el rAF y quita listeners
 }
 
 export interface AsteroidsOptions {
   onState: (s: GameState) => void; // HUD React
   onGameOver: (finalScore: number) => void; // abre el modal
+  skin?: SkinName; // tema visual inicial (default "clasico")
 }
 
 // ── Mundo compartido ──────────────────────────────────────────────────────────
@@ -41,6 +95,7 @@ interface World {
   H: number;
   ctx: CanvasRenderingContext2D;
   keys: Record<string, boolean>;
+  palette: Palette;
 }
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
@@ -83,10 +138,14 @@ class Bullet {
 
   draw(w: World) {
     const ctx = w.ctx;
-    ctx.fillStyle = "#fff";
+    ctx.save();
+    ctx.shadowBlur = w.palette.glow;
+    ctx.shadowColor = w.palette.bullet;
+    ctx.fillStyle = w.palette.bullet;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
   }
 }
 
@@ -148,7 +207,9 @@ class Asteroid {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.rot);
-    ctx.strokeStyle = "#fff";
+    ctx.shadowBlur = w.palette.glow;
+    ctx.shadowColor = w.palette.asteroid;
+    ctx.strokeStyle = w.palette.asteroid;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -194,12 +255,14 @@ class PowerUp {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(Math.PI / 4);
-    ctx.strokeStyle = "#0ff";
+    ctx.shadowBlur = w.palette.glow;
+    ctx.shadowColor = w.palette.powerup;
+    ctx.strokeStyle = w.palette.powerup;
     ctx.lineWidth = 2;
     const r = this.radius * pulse;
     ctx.strokeRect(-r, -r, r * 2, r * 2);
     ctx.restore();
-    ctx.fillStyle = "#0ff";
+    ctx.fillStyle = w.palette.powerup;
     ctx.font = "bold 12px monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -289,7 +352,9 @@ class Ship {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.rotate(this.angle);
-    ctx.strokeStyle = "#fff";
+    ctx.shadowBlur = w.palette.glow;
+    ctx.shadowColor = w.palette.ship;
+    ctx.strokeStyle = w.palette.ship;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = "round";
 
@@ -308,7 +373,7 @@ class Ship {
       ctx.moveTo(-8, -4);
       ctx.lineTo(-8 - rand(6, 14), 0);
       ctx.lineTo(-8, 4);
-      ctx.strokeStyle = "rgba(255, 130, 0, 0.85)";
+      ctx.strokeStyle = w.palette.thruster;
       ctx.stroke();
     }
 
@@ -347,7 +412,7 @@ class Particle {
   draw(w: World) {
     const ctx = w.ctx;
     const alpha = this.ttl / this.life;
-    ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(2)})`;
+    ctx.strokeStyle = `rgba(${w.palette.particle},${alpha.toFixed(2)})`;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(this.x, this.y);
@@ -364,7 +429,13 @@ export function createAsteroids(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("createAsteroids: canvas 2d context no disponible");
 
-  const world: World = { W: 1, H: 1, ctx, keys: {} };
+  const world: World = {
+    W: 1,
+    H: 1,
+    ctx,
+    keys: {},
+    palette: SKINS[opts.skin ?? DEFAULT_SKIN],
+  };
   const justPressed: Record<string, boolean> = {};
 
   // Teclas del juego: capturamos preventDefault para no scrollear la página.
@@ -571,7 +642,7 @@ export function createAsteroids(
   // ── Draw ─────────────────────────────────────────────────────────────────────
   function draw() {
     const c = world.ctx;
-    c.fillStyle = "#000";
+    c.fillStyle = world.palette.bg;
     c.fillRect(0, 0, world.W, world.H);
 
     particles.forEach((p) => p.draw(world));
@@ -674,6 +745,11 @@ export function createAsteroids(
     },
     resize() {
       resize();
+    },
+    setSkin(name: SkinName) {
+      world.palette = SKINS[name] ?? SKINS[DEFAULT_SKIN];
+      // Redibuja inmediatamente para que el cambio se vea aunque esté en pausa.
+      draw();
     },
     destroy() {
       cancelAnimationFrame(raf);
