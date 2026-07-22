@@ -9,9 +9,16 @@ import {
   createAsteroids,
   type AsteroidsHandle,
   type GameState,
+  type SkinName,
 } from "./engine";
 
 const GAME = GAMES.find((g) => g.id === "asteroids")!;
+
+const SKIN_OPTIONS: { key: SkinName; label: string }[] = [
+  { key: "clasico", label: "CLÁSICO" },
+  { key: "neon", label: "NEON" },
+  { key: "retro", label: "RETRO" },
+];
 
 const INITIAL_STATE: GameState = {
   score: 0,
@@ -35,6 +42,7 @@ export default function AsteroidsPlayer() {
   const [nameEdit, setNameEdit] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveWarn, setSaveWarn] = useState(false);
+  const [skin, setSkin] = useState<SkinName>("clasico");
 
   // Monta el motor una sola vez sobre el canvas ya renderizado.
   useEffect(() => {
@@ -104,6 +112,27 @@ export default function AsteroidsPlayer() {
           )}
         </div>
         <div className="hud-actions">
+          <div
+            className="av-chips"
+            role="radiogroup"
+            aria-label="Skin del juego"
+            style={{ marginRight: 8 }}
+          >
+            {SKIN_OPTIONS.map((o) => (
+              <button
+                key={o.key}
+                role="radio"
+                aria-checked={skin === o.key}
+                className={`chip${skin === o.key ? " active" : ""}`}
+                onClick={() => {
+                  setSkin(o.key);
+                  handleRef.current?.setSkin(o.key);
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
           <button
             className="btn yellow"
             onClick={() =>
