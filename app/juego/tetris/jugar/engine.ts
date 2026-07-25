@@ -27,6 +27,7 @@ export interface TetrisHandle {
   restart(): void;
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y recoloca el tablero
+  input(code: string, down: boolean): void; // inyecta input (mando táctil)
   destroy(): void; // cancela el rAF y quita listeners
 }
 
@@ -453,10 +454,12 @@ export function createTetris(
   }
 
   // ── Input ────────────────────────────────────────────────────────────────────
-  function onKeyDown(e: KeyboardEvent) {
-    if (GAME_KEYS.has(e.code)) e.preventDefault();
+  // Camino único para teclado y mando táctil. Tetris es edge-triggered: solo
+  // reacciona al "down" (pulsación); el "up" no hace nada.
+  function applyKey(code: string, down: boolean) {
+    if (!down) return;
     if (paused || state !== "playing") return;
-    switch (e.code) {
+    switch (code) {
       case "ArrowLeft":
         if (!collide(current.shape, current.x - 1, current.y)) current.x--;
         break;
@@ -475,6 +478,10 @@ export function createTetris(
         break;
     }
     emitState();
+  }
+  function onKeyDown(e: KeyboardEvent) {
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    applyKey(e.code, true);
   }
 
   window.addEventListener("keydown", onKeyDown);
@@ -512,6 +519,9 @@ export function createTetris(
     },
     resize() {
       resize();
+    },
+    input(code: string, down: boolean) {
+      applyKey(code, down);
     },
     destroy() {
       cancelAnimationFrame(raf);
