@@ -1451,18 +1451,54 @@ a { color: inherit; text-decoration: none; }
 /* Estilo base del mando. El layout responsivo de .av-player (HUD/canvas/mando)
    vive más abajo dentro de @media (pointer: coarse). */
 .touch-gamepad {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   width: 100%;
   max-width: 100%;
-  padding: 14px clamp(8px, 3vw, 18px);
+  padding: 16px clamp(14px, 5vw, 22px);
+  /* Chasis "Gamepad MK-II": cuerpo con degradado, borde neón, glow y bordes
+     redondeados (ver references/gamepad-assets/gamepad.html → .gp). */
+  background: linear-gradient(180deg, #1c1c28 0%, #0c0c14 100%);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow:
+    0 30px 80px -30px rgba(0, 245, 255, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.6);
   /* Sin scroll ni zoom al arrastrar sobre el mando. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
+}
+/* Doble borde interior neón. */
+.touch-gamepad::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(0, 245, 255, 0.14);
+  border-radius: 18px;
+  pointer-events: none;
+}
+/* Textura punteada del chasis (no intercepta toques). */
+.touch-gamepad::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 8px 8px;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.6;
+}
+/* La cruceta y las acciones van por encima de la textura decorativa. */
+.touch-gamepad > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Tamaño de tecla responsivo: cabe sin scroll horizontal desde 320px. */
