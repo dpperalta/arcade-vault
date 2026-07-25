@@ -5,7 +5,19 @@ import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
+import TouchGamepad, {
+  type GamepadConfig,
+} from "../../../components/TouchGamepad";
+import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import { createArkanoid, type ArkanoidHandle, type GameState } from "./engine";
+
+// Mando: solo mover la paleta ←/→. La bola se lanza sola (no hay acción de
+// lanzar por teclado), así que A y B quedan atenuados e inertes.
+const PAD: GamepadConfig = {
+  dirs: { left: "ArrowLeft", right: "ArrowRight" },
+  a: null,
+  b: null,
+};
 
 // La ficha se añade al fallback en el Paso 3; hasta entonces usamos un título
 // por defecto para que la ruta compile y navegue de forma independiente.
@@ -59,6 +71,7 @@ export default function ArkanoidPlayer() {
     };
   }, []);
 
+  const coarse = useCoarsePointer();
   const paused = gs.phase === "paused";
   const name = nameEdit ?? user?.name ?? "INVITADO";
 
@@ -159,6 +172,13 @@ export default function ArkanoidPlayer() {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {coarse && (
+        <TouchGamepad
+          config={PAD}
+          onInput={(c, d) => handleRef.current?.input(c, d)}
+        />
+      )}
 
       {over && (
         <div className="modal-bd">

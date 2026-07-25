@@ -5,9 +5,25 @@ import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
+import TouchGamepad, {
+  type GamepadConfig,
+} from "../../../components/TouchGamepad";
+import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import { createTetris, type TetrisHandle, type GameState } from "./engine";
 
 const GAME = GAMES.find((g) => g.id === "tetris")!;
+
+// Mando: mover ←/→, rotar ↑, bajada suave ↓; A = rotar (tap), B = hard-drop (tap).
+const PAD: GamepadConfig = {
+  dirs: {
+    up: "ArrowUp",
+    down: "ArrowDown",
+    left: "ArrowLeft",
+    right: "ArrowRight",
+  },
+  a: { label: "↻", code: "KeyX", hold: false },
+  b: { label: "⤓", code: "Space", hold: false },
+};
 
 const INITIAL_STATE: GameState = {
   score: 0,
@@ -56,6 +72,7 @@ export default function TetrisPlayer() {
     };
   }, []);
 
+  const coarse = useCoarsePointer();
   const paused = gs.phase === "paused";
   const name = nameEdit ?? user?.name ?? "INVITADO";
 
@@ -156,6 +173,13 @@ export default function TetrisPlayer() {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {coarse && (
+        <TouchGamepad
+          config={PAD}
+          onInput={(c, d) => handleRef.current?.input(c, d)}
+        />
+      )}
 
       {over && (
         <div className="modal-bd">

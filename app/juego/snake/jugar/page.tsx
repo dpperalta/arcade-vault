@@ -5,9 +5,25 @@ import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
+import TouchGamepad, {
+  type GamepadConfig,
+} from "../../../components/TouchGamepad";
+import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import { createSnake, type SnakeHandle, type GameState } from "./engine";
 
 const GAME = GAMES.find((g) => g.id === "snake")!;
+
+// Mando: dirección en las 4 flechas; sin botones de acción.
+const PAD: GamepadConfig = {
+  dirs: {
+    up: "ArrowUp",
+    down: "ArrowDown",
+    left: "ArrowLeft",
+    right: "ArrowRight",
+  },
+  a: null,
+  b: null,
+};
 
 const INITIAL_STATE: GameState = {
   score: 0,
@@ -56,6 +72,7 @@ export default function SnakePlayer() {
     };
   }, []);
 
+  const coarse = useCoarsePointer();
   const paused = gs.phase === "paused";
   const name = nameEdit ?? user?.name ?? "INVITADO";
 
@@ -156,6 +173,13 @@ export default function SnakePlayer() {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {coarse && (
+        <TouchGamepad
+          config={PAD}
+          onInput={(c, d) => handleRef.current?.input(c, d)}
+        />
+      )}
 
       {over && (
         <div className="modal-bd">
