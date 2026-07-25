@@ -126,23 +126,27 @@ export default function AsteroidsPlayer() {
         </div>
         <div className="hud-actions">
           {coarse ? (
-            // Móvil: lista desplegable compacta para no romper el HUD.
-            <select
-              className="av-skin-select"
-              aria-label="Skin del juego"
-              value={skin}
-              onChange={(e) => {
-                const key = e.target.value as SkinName;
-                setSkin(key);
-                handleRef.current?.setSkin(key);
-              }}
-            >
-              {SKIN_OPTIONS.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+            // Móvil: lista desplegable compacta, etiquetada "SKIN" para que se
+            // reconozca como el control de tema sin romper el HUD.
+            <label className="av-skin-field">
+              <span className="av-skin-label">SKIN</span>
+              <select
+                className="av-skin-select"
+                aria-label="Skin del juego"
+                value={skin}
+                onChange={(e) => {
+                  const key = e.target.value as SkinName;
+                  setSkin(key);
+                  handleRef.current?.setSkin(key);
+                }}
+              >
+                {SKIN_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           ) : (
             // Desktop: chips seleccionables (look original).
             <div

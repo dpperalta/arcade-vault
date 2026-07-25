@@ -1549,18 +1549,34 @@ a { color: inherit; text-decoration: none; }
   .av-player .touch-gamepad { margin-top: 12px; }
 
   /* Selector de SKIN como lista desplegable (solo Asteroids, ver page.tsx) */
+  .av-skin-field { display: inline-flex; align-items: center; gap: 6px; }
+  .av-skin-label {
+    font-family: var(--pixel);
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    color: var(--ink-dim);
+  }
   .av-skin-select {
     height: 34px;
-    padding: 0 10px;
+    /* Espacio a la derecha para el caret ▾ dibujado con background. */
+    padding: 0 24px 0 10px;
     background: var(--bg);
+    background-image: linear-gradient(45deg, transparent 50%, var(--cyan) 50%),
+      linear-gradient(135deg, var(--cyan) 50%, transparent 50%);
+    background-position: right 11px center, right 6px center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
     color: var(--cyan);
-    border: 1px solid var(--line);
+    border: 1px solid var(--cyan);
+    box-shadow: 0 0 8px rgba(0,245,255,0.18);
     font-family: var(--pixel);
     font-size: 8px;
     letter-spacing: 0.1em;
     outline: 0;
+    -webkit-appearance: none;
+    appearance: none;
   }
-  .av-skin-select:focus { border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,245,255,0.35); }
+  .av-skin-select:focus { box-shadow: 0 0 10px rgba(0,245,255,0.4); }
 
   /* Modal de FIN utilizable en teléfono: entra completo, con scroll si hace falta */
   .modal { padding: 22px 18px; max-height: 90dvh; overflow-y: auto; }
