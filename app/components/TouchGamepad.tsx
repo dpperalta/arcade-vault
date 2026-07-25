@@ -138,7 +138,8 @@ export default function TouchGamepad({ config, onInput }: TouchGamepadProps) {
       className={`tg-action tg-${letter}`}
       onInput={onInput}
     >
-      {btn?.label ?? letter.toUpperCase()}
+      <span className="tg-ab-ring" aria-hidden />
+      <span className="tg-ab-letter">{btn?.label ?? letter.toUpperCase()}</span>
     </PadKey>
   );
 
