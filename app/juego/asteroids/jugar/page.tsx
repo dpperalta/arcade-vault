@@ -125,27 +125,48 @@ export default function AsteroidsPlayer() {
           )}
         </div>
         <div className="hud-actions">
-          <div
-            className="av-chips"
-            role="radiogroup"
-            aria-label="Skin del juego"
-            style={{ marginRight: 8 }}
-          >
-            {SKIN_OPTIONS.map((o) => (
-              <button
-                key={o.key}
-                role="radio"
-                aria-checked={skin === o.key}
-                className={`chip${skin === o.key ? " active" : ""}`}
-                onClick={() => {
-                  setSkin(o.key);
-                  handleRef.current?.setSkin(o.key);
-                }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+          {coarse ? (
+            // Móvil: lista desplegable compacta para no romper el HUD.
+            <select
+              className="av-skin-select"
+              aria-label="Skin del juego"
+              value={skin}
+              onChange={(e) => {
+                const key = e.target.value as SkinName;
+                setSkin(key);
+                handleRef.current?.setSkin(key);
+              }}
+            >
+              {SKIN_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            // Desktop: chips seleccionables (look original).
+            <div
+              className="av-chips"
+              role="radiogroup"
+              aria-label="Skin del juego"
+              style={{ marginRight: 8 }}
+            >
+              {SKIN_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  role="radio"
+                  aria-checked={skin === o.key}
+                  className={`chip${skin === o.key ? " active" : ""}`}
+                  onClick={() => {
+                    setSkin(o.key);
+                    handleRef.current?.setSkin(o.key);
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             className="btn yellow"
             onClick={() =>
