@@ -33,6 +33,7 @@ export interface SnakeHandle {
   restart(): void;
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y recalcula el tamaño de celda
+  input(code: string, down: boolean): void; // inyecta input (mando táctil)
   destroy(): void; // cancela el rAF y quita listeners de teclado
 }
 
@@ -429,9 +430,11 @@ export function createSnake(
     nextDir = { x, y };
   }
 
-  function onKeyDown(e: KeyboardEvent) {
-    if (GAME_KEYS.has(e.code)) e.preventDefault();
-    switch (e.code) {
+  // Camino único para teclado y mando táctil. Snake es edge-triggered: solo
+  // reacciona al "down"; el "up" no hace nada.
+  function applyKey(code: string, down: boolean) {
+    if (!down) return;
+    switch (code) {
       case "ArrowLeft":
       case "KeyA":
         setDir(-1, 0);
@@ -449,6 +452,10 @@ export function createSnake(
         setDir(0, 1);
         break;
     }
+  }
+  function onKeyDown(e: KeyboardEvent) {
+    if (GAME_KEYS.has(e.code)) e.preventDefault();
+    applyKey(e.code, true);
   }
 
   window.addEventListener("keydown", onKeyDown);
@@ -486,6 +493,9 @@ export function createSnake(
     },
     resize() {
       resize();
+    },
+    input(code: string, down: boolean) {
+      applyKey(code, down);
     },
     destroy() {
       cancelAnimationFrame(raf);

@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
+import TouchGamepad, {
+  type GamepadConfig,
+} from "../../../components/TouchGamepad";
+import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import {
   createAsteroids,
   type AsteroidsHandle,
@@ -13,6 +17,14 @@ import {
 } from "./engine";
 
 const GAME = GAMES.find((g) => g.id === "asteroids")!;
+
+// Mando: girar ←/→, propulsión ↑ (sin ↓); A = disparar (Space, hold).
+// El motor no tiene hiperespacio/escudo, así que B queda atenuado e inerte.
+const PAD: GamepadConfig = {
+  dirs: { up: "ArrowUp", left: "ArrowLeft", right: "ArrowRight" },
+  a: { label: "A", code: "Space", hold: true },
+  b: null,
+};
 
 const SKIN_OPTIONS: { key: SkinName; label: string }[] = [
   { key: "clasico", label: "CLÁSICO" },
@@ -69,6 +81,7 @@ export default function AsteroidsPlayer() {
     };
   }, []);
 
+  const coarse = useCoarsePointer();
   const paused = gs.phase === "paused";
   const name = nameEdit ?? user?.name ?? "INVITADO";
 
@@ -112,27 +125,52 @@ export default function AsteroidsPlayer() {
           )}
         </div>
         <div className="hud-actions">
-          <div
-            className="av-chips"
-            role="radiogroup"
-            aria-label="Skin del juego"
-            style={{ marginRight: 8 }}
-          >
-            {SKIN_OPTIONS.map((o) => (
-              <button
-                key={o.key}
-                role="radio"
-                aria-checked={skin === o.key}
-                className={`chip${skin === o.key ? " active" : ""}`}
-                onClick={() => {
-                  setSkin(o.key);
-                  handleRef.current?.setSkin(o.key);
+          {coarse ? (
+            // Móvil: lista desplegable compacta, etiquetada "SKIN" para que se
+            // reconozca como el control de tema sin romper el HUD.
+            <label className="av-skin-field">
+              <span className="av-skin-label">SKIN</span>
+              <select
+                className="av-skin-select"
+                aria-label="Skin del juego"
+                value={skin}
+                onChange={(e) => {
+                  const key = e.target.value as SkinName;
+                  setSkin(key);
+                  handleRef.current?.setSkin(key);
                 }}
               >
-                {o.label}
-              </button>
-            ))}
-          </div>
+                {SKIN_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            // Desktop: chips seleccionables (look original).
+            <div
+              className="av-chips"
+              role="radiogroup"
+              aria-label="Skin del juego"
+              style={{ marginRight: 8 }}
+            >
+              {SKIN_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  role="radio"
+                  aria-checked={skin === o.key}
+                  className={`chip${skin === o.key ? " active" : ""}`}
+                  onClick={() => {
+                    setSkin(o.key);
+                    handleRef.current?.setSkin(o.key);
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             className="btn yellow"
             onClick={() =>
@@ -198,6 +236,13 @@ export default function AsteroidsPlayer() {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {coarse && (
+        <TouchGamepad
+          config={PAD}
+          onInput={(c, d) => handleRef.current?.input(c, d)}
+        />
+      )}
 
       {over && (
         <div className="modal-bd">

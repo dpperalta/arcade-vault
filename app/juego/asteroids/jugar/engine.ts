@@ -80,6 +80,7 @@ export interface AsteroidsHandle {
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y reescala el mundo
   setSkin(name: SkinName): void; // cambia el tema visual en vivo
+  input(code: string, down: boolean): void; // inyecta input (mando táctil)
   destroy(): void; // cancela el rAF y quita listeners
 }
 
@@ -697,14 +698,22 @@ export function createAsteroids(
   }
 
   // ── Input ────────────────────────────────────────────────────────────────────
+  // Camino único para teclado y mando táctil: actualiza world.keys/justPressed.
+  function applyKey(code: string, down: boolean) {
+    if (down) {
+      if (!world.keys[code]) justPressed[code] = true;
+      world.keys[code] = true;
+    } else {
+      world.keys[code] = false;
+    }
+  }
   function onKeyDown(e: KeyboardEvent) {
     if (GAME_KEYS.has(e.code)) e.preventDefault();
-    if (!world.keys[e.code]) justPressed[e.code] = true;
-    world.keys[e.code] = true;
+    applyKey(e.code, true);
   }
   function onKeyUp(e: KeyboardEvent) {
     if (GAME_KEYS.has(e.code)) e.preventDefault();
-    world.keys[e.code] = false;
+    applyKey(e.code, false);
   }
 
   window.addEventListener("keydown", onKeyDown);
@@ -750,6 +759,9 @@ export function createAsteroids(
       world.palette = SKINS[name] ?? SKINS[DEFAULT_SKIN];
       // Redibuja inmediatamente para que el cambio se vea aunque esté en pausa.
       draw();
+    },
+    input(code: string, down: boolean) {
+      applyKey(code, down);
     },
     destroy() {
       cancelAnimationFrame(raf);

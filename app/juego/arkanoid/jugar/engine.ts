@@ -34,6 +34,7 @@ export interface ArkanoidHandle {
   restart(): void;
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y reescala el mundo
+  input(code: string, down: boolean): void; // inyecta input (mando táctil)
   destroy(): void; // cancela el rAF y quita listeners (teclado + ratón)
 }
 
@@ -498,13 +499,17 @@ export function createArkanoid(
   }
 
   // ── Input ────────────────────────────────────────────────────────────────────
+  // Camino único para teclado y mando táctil: actualiza world.keys.
+  function applyKey(code: string, down: boolean) {
+    world.keys[code] = down;
+  }
   function onKeyDown(e: KeyboardEvent) {
     if (GAME_KEYS.has(e.code)) e.preventDefault();
-    world.keys[e.code] = true;
+    applyKey(e.code, true);
   }
   function onKeyUp(e: KeyboardEvent) {
     if (GAME_KEYS.has(e.code)) e.preventDefault();
-    world.keys[e.code] = false;
+    applyKey(e.code, false);
   }
   // Ratón: mueve la paleta mapeando clientX → coordenada lógica (0..800).
   function onMouseMove(e: MouseEvent) {
@@ -550,6 +555,9 @@ export function createArkanoid(
     },
     resize() {
       resize();
+    },
+    input(code: string, down: boolean) {
+      applyKey(code, down);
     },
     destroy() {
       cancelAnimationFrame(raf);
