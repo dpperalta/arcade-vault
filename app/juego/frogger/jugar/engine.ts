@@ -331,20 +331,86 @@ export function createFrogger(
     return -1;
   }
 
-  // ── Stubs rellenados en pasos 5–7 ────────────────────────────────────────────
-  // Colisión con vehículos de carretera (Paso 5).
+  // ── Colisiones, soporte y meta ───────────────────────────────────────────────
+  // Punto de prueba: centro de la celda que ocupa la rana.
+  const frogCenter = () => frog.col + 0.5;
+
+  const covers = (e: Entity, x: number) => x >= e.col && x < e.col + e.width;
+
+  // Colisión con un vehículo: la rana está en un carril de carretera y su centro
+  // cae dentro del rango de alguna entidad de ese carril.
   function checkRoadCollision(): boolean {
-    return false;
+    const lane = laneAt(frog.row);
+    if (!lane) return false;
+    if (frog.row < ROW_ROAD_TOP || frog.row > ROW_ROAD_BOT) return false;
+    const x = frogCenter();
+    return lane.entities.some((e) => covers(e, x));
   }
-  // Entidad de río que soporta a la rana, o null si está sobre el agua (Paso 5).
+
+  // Entidad de río que soporta a la rana, o null si está sobre el agua. Una
+  // tortuga sumergida no da soporte.
   function getSupport(): Entity | null {
+    const lane = laneAt(frog.row);
+    if (!lane) return null;
+    const x = frogCenter();
+    for (const e of lane.entities) {
+      if (!covers(e, x)) continue;
+      if (e.type === "turtle" && e.submerged) return null;
+      return e;
+    }
     return null;
   }
-  // Resuelve la celda de aterrizaje tras completar un salto: muerte / meta /
-  // puntuación por avance (Paso 5).
-  function resolveCell() {
-    // Paso 5
+
+  // Meta: la rana llegó a la fila superior. Si cae en una boca libre, la ocupa y
+  // puntúa; si no hay boca o ya está ocupada, muere.
+  function checkGoal() {
+    const gi = goalIndexForCol(Math.round(frog.col));
+    if (gi === -1 || goals[gi]) {
+      killFrog();
+      return;
+    }
+    goals[gi] = true;
+    // Puntúa el avance hasta la fila de metas, la boca y el bonus de tiempo.
+    if (ROW_GOALS < maxRowReached) {
+      score += (maxRowReached - ROW_GOALS) * PTS_ADVANCE;
+    }
+    score += PTS_GOAL;
+    score += Math.max(0, Math.ceil(roundTime)) * PTS_TIME_MULT;
+
+    // ¿Todas las bocas llenas? → ronda completada. Si no, nueva rana desde la base.
+    if (goals.every(Boolean)) {
+      score += PTS_ROUND;
+      completeRound();
+    } else {
+      frog = newFrog();
+      maxRowReached = ROW_START;
+      roundTime = roundTimeForLevel(level);
+    }
   }
+
+  // Resuelve la celda de aterrizaje tras completar un salto: muerte / meta /
+  // puntuación por avance.
+  function resolveCell() {
+    if (frog.row === ROW_GOALS) {
+      checkGoal();
+      return;
+    }
+    if (isRiverRow(frog.row)) {
+      if (!getSupport()) {
+        killFrog(); // cae al agua
+        return;
+      }
+    } else if (checkRoadCollision()) {
+      killFrog(); // atropellada
+      return;
+    }
+    // Sobrevive: puntúa cada celda nueva avanzada hacia arriba.
+    if (frog.row < maxRowReached) {
+      score += (maxRowReached - frog.row) * PTS_ADVANCE;
+      maxRowReached = frog.row;
+    }
+  }
+
   // Ronda completada: reinicia rana, bocas, sube nivel, reconstruye carriles (Paso 6).
   function completeRound() {
     // Paso 6
@@ -758,15 +824,10 @@ export function createFrogger(
   raf = requestAnimationFrame(loop);
 
   // Referencias reservadas para pasos posteriores (evita warnings de no-usado).
+  // CANVAS_W/CANVAS_H documentan el tamaño lógico (640×560); el mundo se escala
+  // por celda en resize(), así que no se referencian directamente.
   void CANVAS_W;
   void CANVAS_H;
-  void maxRowReached;
-  void goalIndexForCol;
-  void completeRound;
-  void PTS_ADVANCE;
-  void PTS_GOAL;
-  void PTS_ROUND;
-  void PTS_TIME_MULT;
 
   // ── Handle público ───────────────────────────────────────────────────────────
   return {
