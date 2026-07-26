@@ -411,9 +411,17 @@ export function createFrogger(
     }
   }
 
-  // Ronda completada: reinicia rana, bocas, sube nivel, reconstruye carriles (Paso 6).
+  // Ronda completada: reinicia la rana en la base, vacía las bocas, sube de nivel,
+  // reconstruye los carriles (más rápidos) y resetea el temporizador.
   function completeRound() {
-    // Paso 6
+    level += 1;
+    goals = new Array(GOAL_COUNT).fill(false);
+    lanes = buildLanes(level);
+    roundTime = roundTimeForLevel(level);
+    maxRowReached = ROW_START;
+    frog = newFrog();
+    pendingDir = null;
+    // El HUD React refleja el nuevo nivel en el próximo emitState() del loop.
   }
   // Muerte de la rana: resta vida, reposiciona o dispara game over (Paso 7).
   function killFrog() {
