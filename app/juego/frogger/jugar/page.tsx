@@ -9,9 +9,20 @@ import TouchGamepad, {
   type GamepadConfig,
 } from "../../../components/TouchGamepad";
 import { useCoarsePointer } from "../../../components/useCoarsePointer";
-import { createFrogger, type FroggerHandle, type GameState } from "./engine";
+import {
+  createFrogger,
+  type FroggerHandle,
+  type GameState,
+  type SkinName,
+} from "./engine";
 
 const GAME = GAMES.find((g) => g.id === "frogger")!;
+
+const SKIN_OPTIONS: { key: SkinName; label: string }[] = [
+  { key: "clasico", label: "CLÁSICO" },
+  { key: "neon", label: "NEON" },
+  { key: "retro", label: "RETRO" },
+];
 
 // Mando: dirección en las 4 flechas; sin botones de acción.
 const PAD: GamepadConfig = {
@@ -46,6 +57,7 @@ export default function FroggerPlayer() {
   const [nameEdit, setNameEdit] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveWarn, setSaveWarn] = useState(false);
+  const [skin, setSkin] = useState<SkinName>("clasico");
 
   // Monta el motor una sola vez sobre el canvas ya renderizado.
   useEffect(() => {
@@ -108,6 +120,51 @@ export default function FroggerPlayer() {
           </div>
         </div>
         <div className="hud-actions">
+          {coarse ? (
+            // Móvil: lista desplegable compacta, etiquetada "SKIN".
+            <label className="av-skin-field">
+              <span className="av-skin-label">SKIN</span>
+              <select
+                className="av-skin-select"
+                aria-label="Skin del juego"
+                value={skin}
+                onChange={(e) => {
+                  const key = e.target.value as SkinName;
+                  setSkin(key);
+                  handleRef.current?.setSkin(key);
+                }}
+              >
+                {SKIN_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            // Desktop: chips seleccionables.
+            <div
+              className="av-chips"
+              role="radiogroup"
+              aria-label="Skin del juego"
+              style={{ marginRight: 8 }}
+            >
+              {SKIN_OPTIONS.map((o) => (
+                <button
+                  key={o.key}
+                  role="radio"
+                  aria-checked={skin === o.key}
+                  className={`chip${skin === o.key ? " active" : ""}`}
+                  onClick={() => {
+                    setSkin(o.key);
+                    handleRef.current?.setSkin(o.key);
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
           <button
             className="btn yellow"
             onClick={() =>

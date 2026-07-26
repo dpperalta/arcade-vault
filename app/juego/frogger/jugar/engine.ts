@@ -15,6 +15,176 @@
 //   filas 8–12    → carretera (5 carriles de tráfico)
 //   fila 13       → base de inicio (zona segura inferior)
 
+// ── Skins / paletas ───────────────────────────────────────────────────────────
+export type SkinName = "clasico" | "neon" | "retro";
+
+// Todos los slots de color que el juego dibuja. Ninguna función de dibujo usa
+// literales sueltos: todo color visible sale de la paleta activa.
+export interface Palette {
+  // Fondos por zona.
+  bg: string; // fondo del canvas (bandas fuera del tablero)
+  goalBand: string; // banda de metas (fila 0)
+  river: string; // río
+  safe: string; // zonas seguras (media + base de inicio)
+  road: string; // carretera
+  // Metas / nenúfares.
+  goalFill: string; // relleno de la boca destino
+  goalBorder: string; // borde de la boca
+  goalFrog: string; // silueta de rana en boca ocupada
+  // Vehículos.
+  carBodies: Record<string, string>; // carrocería de coche por fila (8–12)
+  carDefault: string; // fallback de carrocería de coche
+  truckBody: string; // carrocería de camión
+  truckCab: string; // cabina de camión
+  wheel: string; // ruedas
+  // Río.
+  log: string; // tronco
+  logGrain: string; // vetas de la madera (stroke)
+  turtle: string; // caparazón de tortuga a flote
+  turtleScale: string; // patrón de escamas (stroke)
+  turtleSubmerged: string; // contorno de tortuga sumergida (stroke)
+  // Rana.
+  frog: string; // cuerpo de la rana
+  frogLeg: string; // patas durante el salto
+  frogGlow: string; // color del shadow (glow)
+  frogGlowBlur: number; // radio del shadowBlur (0 = sin glow)
+  eye: string; // esclerótica del ojo
+  pupil: string; // pupila del ojo
+  // HUD.
+  timeBarBg: string; // fondo de la barra de tiempo
+  timeHigh: string; // barra > 50 %
+  timeMid: string; // barra 25–50 %
+  timeLow: string; // barra < 25 %
+  score: string; // texto de puntuación
+  levelText: string; // texto de nivel
+  livesIcon: string; // iconos de vida
+}
+
+export const SKINS: Record<SkinName, Palette> = {
+  // Fiel al look original: extraído tal cual de los literales hardcodeados.
+  clasico: {
+    bg: "#05070f",
+    goalBand: "#06210f",
+    river: "#0b2545",
+    safe: "#123a1f",
+    road: "#131319",
+    goalFill: "#0a3d1f",
+    goalBorder: "#d4af37",
+    goalFrog: "#4ade80",
+    carBodies: {
+      "8": "#f59e0b",
+      "9": "#38bdf8",
+      "10": "#ef4444",
+      "11": "#a3a3a3",
+      "12": "#ec4899",
+    },
+    carDefault: "#ef4444",
+    truckBody: "#8b8b93",
+    truckCab: "#5b5b63",
+    wheel: "#0a0a0f",
+    log: "#7c4a21",
+    logGrain: "rgba(60,30,10,0.55)",
+    turtle: "#0e9f6e",
+    turtleScale: "rgba(6,60,40,0.6)",
+    turtleSubmerged: "rgba(52,211,153,0.4)",
+    frog: "#4ade80",
+    frogLeg: "#16a34a",
+    frogGlow: "#4ade80",
+    frogGlowBlur: 8,
+    eye: "#fff",
+    pupil: "#0a0a0f",
+    timeBarBg: "rgba(0,0,0,0.5)",
+    timeHigh: "#4ade80",
+    timeMid: "#facc15",
+    timeLow: "#ef4444",
+    score: "#fff",
+    levelText: "#facc15",
+    livesIcon: "#4ade80",
+  },
+  // Variante brillante, saturada, con glow alto.
+  neon: {
+    bg: "#05010f",
+    goalBand: "#1b0140",
+    river: "#101a7a",
+    safe: "#083a44",
+    road: "#150a2e",
+    goalFill: "#0d0630",
+    goalBorder: "#ffd60a",
+    goalFrog: "#39ff14",
+    carBodies: {
+      "8": "#ffb300",
+      "9": "#00f0ff",
+      "10": "#ff2fd0",
+      "11": "#c8b6ff",
+      "12": "#ff1e8a",
+    },
+    carDefault: "#ff2fd0",
+    truckBody: "#b06bff",
+    truckCab: "#7a2fff",
+    wheel: "#12002a",
+    log: "#ff7a1a",
+    logGrain: "rgba(255,180,80,0.5)",
+    turtle: "#00ffa3",
+    turtleScale: "rgba(0,80,60,0.7)",
+    turtleSubmerged: "rgba(0,255,180,0.5)",
+    frog: "#39ff14",
+    frogLeg: "#00c853",
+    frogGlow: "#39ff14",
+    frogGlowBlur: 16,
+    eye: "#faff00",
+    pupil: "#12002a",
+    timeBarBg: "rgba(0,0,0,0.5)",
+    timeHigh: "#39ff14",
+    timeMid: "#fdff5a",
+    timeLow: "#ff2fd0",
+    score: "#00f0ff",
+    levelText: "#faff00",
+    livesIcon: "#39ff14",
+  },
+  // Variante apagada tipo CRT fósforo ámbar/verde, contraste bajo.
+  retro: {
+    bg: "#0d0a02",
+    goalBand: "#12180a",
+    river: "#152112",
+    safe: "#1e2a12",
+    road: "#14140c",
+    goalFill: "#12200e",
+    goalBorder: "#b8860b",
+    goalFrog: "#8f9f4f",
+    carBodies: {
+      "8": "#b58a3c",
+      "9": "#7f9a52",
+      "10": "#a86a3c",
+      "11": "#8a8a5a",
+      "12": "#9a7a4a",
+    },
+    carDefault: "#a86a3c",
+    truckBody: "#6b6b4a",
+    truckCab: "#4a4a30",
+    wheel: "#0a0a04",
+    log: "#5c4326",
+    logGrain: "rgba(40,28,10,0.55)",
+    turtle: "#6f8f4f",
+    turtleScale: "rgba(30,40,20,0.6)",
+    turtleSubmerged: "rgba(120,150,90,0.4)",
+    frog: "#8f9f4f",
+    frogLeg: "#5f6f2f",
+    frogGlow: "#8f9f4f",
+    frogGlowBlur: 3,
+    eye: "#d2c078",
+    pupil: "#0a0a04",
+    timeBarBg: "rgba(0,0,0,0.5)",
+    timeHigh: "#8f9f4f",
+    timeMid: "#c8a24a",
+    timeLow: "#a8542f",
+    score: "#d2c078",
+    levelText: "#c8a24a",
+    livesIcon: "#8f9f4f",
+  },
+};
+
+const DEFAULT_SKIN: SkinName = "clasico";
+
 // ── Contrato público ──────────────────────────────────────────────────────────
 // Fases: "playing" activo, "paused" congelado, "gameover" fin.
 export type GamePhase = "playing" | "paused" | "gameover";
@@ -32,6 +202,7 @@ export interface FroggerHandle {
   restart(): void;
   forceGameOver(): void; // botón FIN
   resize(): void; // re-mide el contenedor y recalcula el tamaño de celda
+  setSkin(name: SkinName): void; // cambia el tema visual en vivo
   input(code: string, down: boolean): void; // inyecta input (mando táctil)
   destroy(): void; // cancela el rAF y quita listeners de teclado
 }
@@ -39,6 +210,7 @@ export interface FroggerHandle {
 export interface FroggerOptions {
   onState: (s: GameState) => void; // alimenta el HUD React
   onGameOver: (finalScore: number) => void; // abre el modal
+  skin?: SkinName; // tema visual inicial (default "clasico")
 }
 
 // ── Constantes de la cuadrícula y zonas ────────────────────────────────────────
@@ -112,6 +284,7 @@ interface World {
   offX: number; // offset horizontal para centrar el tablero (px)
   offY: number; // offset vertical para centrar el tablero (px)
   ctx: CanvasRenderingContext2D;
+  palette: Palette; // paleta activa (skin)
 }
 
 // ── Fábrica ───────────────────────────────────────────────────────────────────
@@ -129,6 +302,7 @@ export function createFrogger(
     offX: 0,
     offY: 0,
     ctx,
+    palette: SKINS[opts.skin ?? DEFAULT_SKIN] ?? SKINS[DEFAULT_SKIN],
   };
 
   // Teclas del juego: preventDefault en las flechas para no scrollear.
@@ -548,33 +722,27 @@ export function createFrogger(
   function drawEntity(lane: Lane, e: Entity) {
     const c = world.ctx;
     const cell = world.cell;
+    const p = world.palette;
     const x = px(e.col);
     const y = py(lane.row);
     const w = e.width * cell;
     const pad = cell * 0.12;
 
     if (e.type === "car" || e.type === "truck") {
-      const bodyColors: Record<string, string> = {
-        "8": "#f59e0b",
-        "9": "#38bdf8",
-        "10": "#ef4444",
-        "11": "#a3a3a3",
-        "12": "#ec4899",
-      };
       const isTruck = e.type === "truck";
       c.fillStyle = isTruck
-        ? "#8b8b93"
-        : (bodyColors[String(lane.row)] ?? "#ef4444");
+        ? p.truckBody
+        : (p.carBodies[String(lane.row)] ?? p.carDefault);
       c.fillRect(x + pad, y + pad, w - pad * 2, cell - pad * 2);
       // Cabina diferenciada del camión.
       if (isTruck) {
-        c.fillStyle = "#5b5b63";
+        c.fillStyle = p.truckCab;
         const cabW = cell * 0.6;
         const cabX = lane.dir === 1 ? x + w - pad - cabW : x + pad;
         c.fillRect(cabX, y + pad, cabW, cell - pad * 2);
       }
       // Ruedas.
-      c.fillStyle = "#0a0a0f";
+      c.fillStyle = p.wheel;
       const wr = cell * 0.08;
       const wy1 = y + cell - pad - wr;
       c.beginPath();
@@ -582,10 +750,10 @@ export function createFrogger(
       c.arc(x + w - pad - wr * 2, wy1, wr, 0, Math.PI * 2);
       c.fill();
     } else if (e.type === "log") {
-      c.fillStyle = "#7c4a21";
+      c.fillStyle = p.log;
       c.fillRect(x, y + pad, w, cell - pad * 2);
       // Textura de líneas de la madera.
-      c.strokeStyle = "rgba(60,30,10,0.55)";
+      c.strokeStyle = p.logGrain;
       c.lineWidth = 1;
       c.beginPath();
       for (let lx = x + cell * 0.3; lx < x + w; lx += cell * 0.5) {
@@ -600,18 +768,18 @@ export function createFrogger(
         const cy = y + cell / 2;
         const r = cell * 0.36;
         if (e.submerged) {
-          c.strokeStyle = "rgba(52,211,153,0.4)";
+          c.strokeStyle = p.turtleSubmerged;
           c.lineWidth = 1.5;
           c.beginPath();
           c.arc(cx, cy, r, 0, Math.PI * 2);
           c.stroke();
         } else {
-          c.fillStyle = "#0e9f6e";
+          c.fillStyle = p.turtle;
           c.beginPath();
           c.arc(cx, cy, r, 0, Math.PI * 2);
           c.fill();
           // Patrón de escamas.
-          c.strokeStyle = "rgba(6,60,40,0.6)";
+          c.strokeStyle = p.turtleScale;
           c.lineWidth = 1;
           c.beginPath();
           c.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
@@ -624,20 +792,21 @@ export function createFrogger(
   function drawGoals() {
     const c = world.ctx;
     const cell = world.cell;
+    const p = world.palette;
     for (let i = 0; i < GOAL_COUNT; i++) {
       const startCol = 1 + 3 * i;
       const x = px(startCol);
       const y = py(ROW_GOALS);
       const w = 2 * cell;
       // Nenúfar/boca: rectángulo verde oscuro con borde dorado.
-      c.fillStyle = "#0a3d1f";
+      c.fillStyle = p.goalFill;
       c.fillRect(x, y, w, cell);
-      c.strokeStyle = "#d4af37";
+      c.strokeStyle = p.goalBorder;
       c.lineWidth = 2;
       c.strokeRect(x + 1, y + 1, w - 2, cell - 2);
       // Si está ocupada, dibujar silueta de rana dentro.
       if (goals[i]) {
-        c.fillStyle = "#4ade80";
+        c.fillStyle = p.goalFrog;
         c.beginPath();
         c.ellipse(
           x + w / 2,
@@ -656,6 +825,7 @@ export function createFrogger(
   function drawFrog() {
     const c = world.ctx;
     const cell = world.cell;
+    const p = world.palette;
     // Posición interpolada durante el salto.
     let fc = frog.col;
     let fr = frog.row;
@@ -668,11 +838,11 @@ export function createFrogger(
     const cy = py(fr) + cell / 2;
 
     c.save();
-    c.shadowColor = "#4ade80";
-    c.shadowBlur = 8;
+    c.shadowColor = p.frogGlow;
+    c.shadowBlur = p.frogGlowBlur;
     // Patas extendidas durante el salto.
     if (frog.animating) {
-      c.fillStyle = "#16a34a";
+      c.fillStyle = p.frogLeg;
       const legR = cell * 0.1;
       for (const sx of [-1, 1]) {
         c.beginPath();
@@ -681,7 +851,7 @@ export function createFrogger(
       }
     }
     // Cuerpo.
-    c.fillStyle = "#4ade80";
+    c.fillStyle = p.frog;
     c.beginPath();
     c.ellipse(cx, cy, cell * 0.35, cell * 0.3, 0, 0, Math.PI * 2);
     c.fill();
@@ -702,11 +872,11 @@ export function createFrogger(
     for (const sgn of [-1, 1]) {
       const ex = cx + dx * eyeFwd + perpX * eyeOff * sgn;
       const ey = cy + dy * eyeFwd + perpY * eyeOff * sgn;
-      c.fillStyle = "#fff";
+      c.fillStyle = p.eye;
       c.beginPath();
       c.arc(ex, ey, cell * 0.08, 0, Math.PI * 2);
       c.fill();
-      c.fillStyle = "#0a0a0f";
+      c.fillStyle = p.pupil;
       c.beginPath();
       c.arc(ex, ey, cell * 0.04, 0, Math.PI * 2);
       c.fill();
@@ -716,16 +886,17 @@ export function createFrogger(
   function drawHud() {
     const c = world.ctx;
     const cell = world.cell;
+    const p = world.palette;
     const boardW = COLS * cell;
     const fs = Math.max(11, cell * 0.34);
 
     // Barra de tiempo: franja fina en el borde superior del tablero (fila 0).
     const tRatio = clamp(roundTime / roundTimeForLevel(level), 0, 1);
     const barH = Math.max(4, cell * 0.14);
-    c.fillStyle = "rgba(0,0,0,0.5)";
+    c.fillStyle = p.timeBarBg;
     c.fillRect(world.offX, world.offY, boardW, barH);
     const barColor =
-      tRatio > 0.5 ? "#4ade80" : tRatio > 0.25 ? "#facc15" : "#ef4444";
+      tRatio > 0.5 ? p.timeHigh : tRatio > 0.25 ? p.timeMid : p.timeLow;
     c.fillStyle = barColor;
     c.fillRect(world.offX, world.offY, boardW * tRatio, barH);
 
@@ -734,12 +905,12 @@ export function createFrogger(
     c.textBaseline = "top";
     const ty = world.offY + barH + cell * 0.08;
     // Score arriba-izquierda.
-    c.fillStyle = "#fff";
+    c.fillStyle = p.score;
     c.textAlign = "left";
     c.fillText(String(score), world.offX + cell * 0.15, ty);
     // Nivel arriba-centro.
     c.textAlign = "center";
-    c.fillStyle = "#facc15";
+    c.fillStyle = p.levelText;
     c.fillText(`NIVEL ${level}`, world.offX + boardW / 2, ty);
     c.restore();
 
@@ -748,7 +919,7 @@ export function createFrogger(
     for (let i = 0; i < lives; i++) {
       const lx = world.offX + boardW - cell * 0.25 - i * (r * 2.6) - r;
       const ly = world.offY + barH + cell * 0.22;
-      c.fillStyle = "#4ade80";
+      c.fillStyle = p.livesIcon;
       c.beginPath();
       c.arc(lx, ly, r, 0, Math.PI * 2);
       c.fill();
@@ -757,16 +928,17 @@ export function createFrogger(
 
   function draw() {
     const c = world.ctx;
+    const p = world.palette;
     // Fondo del canvas (bandas fuera del tablero).
-    c.fillStyle = "#05070f";
+    c.fillStyle = p.bg;
     c.fillRect(0, 0, world.W, world.H);
 
     // Fondos por zona.
-    fillRows(ROW_GOALS, ROW_GOALS, "#06210f"); // banda de metas
-    fillRows(ROW_RIVER_TOP, ROW_RIVER_BOT, "#0b2545"); // río
-    fillRows(ROW_SAFE_MID, ROW_SAFE_MID, "#123a1f"); // zona segura media
-    fillRows(ROW_ROAD_TOP, ROW_ROAD_BOT, "#131319"); // carretera
-    fillRows(ROW_START, ROW_START, "#123a1f"); // base de inicio
+    fillRows(ROW_GOALS, ROW_GOALS, p.goalBand); // banda de metas
+    fillRows(ROW_RIVER_TOP, ROW_RIVER_BOT, p.river); // río
+    fillRows(ROW_SAFE_MID, ROW_SAFE_MID, p.safe); // zona segura media
+    fillRows(ROW_ROAD_TOP, ROW_ROAD_BOT, p.road); // carretera
+    fillRows(ROW_START, ROW_START, p.safe); // base de inicio
 
     // Entidades por carril.
     for (const lane of lanes) {
@@ -877,6 +1049,10 @@ export function createFrogger(
     },
     resize() {
       resize();
+    },
+    setSkin(name: SkinName) {
+      world.palette = SKINS[name] ?? SKINS[DEFAULT_SKIN];
+      draw(); // redibuja de inmediato con la nueva paleta (cambio en vivo)
     },
     input(code: string, down: boolean) {
       applyKey(code, down);
