@@ -4,7 +4,7 @@
 - **Fecha:** 2026-07-25
 - **Depende de:** SPEC 10 (mando táctil `TouchGamepad`, `useCoarsePointer`, layout portrait de `.av-player`). No modifica su comportamiento; solo su aspecto.
 - **Objetivo (una frase):** Rediseñar visualmente el `TouchGamepad` de SPEC 10 para que en móvil (`pointer: coarse`) luzca idéntico a la referencia "Gamepad MK-II" (`references/gamepad-assets/`) —chasis neón envolvente, cruceta con flechas SVG y gema LED pulsante, y botones A/B esféricos con glow y anillo—, **sin alterar ninguna funcionalidad, mapeo de controles ni el cableado existente**.
-
+gi
 ---
 
 ## Alcance
