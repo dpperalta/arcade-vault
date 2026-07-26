@@ -262,6 +262,10 @@ interface Lane {
   speed: number; // px/frame base (escalada por nivel)
   dir: 1 | -1; // sentido del desplazamiento horizontal
   entities: Entity[];
+  // SPEC 12 — `String(row)` precalculado en makeLane(). Se cachea la CLAVE y no
+  // el color ya resuelto: setSkin() reasigna world.palette en vivo, así que el
+  // color debe seguir leyéndose de la paleta activa en cada frame.
+  carBodyKey: string;
 }
 
 interface Frog {
@@ -489,6 +493,7 @@ export function createFrogger(
         dir: cfg.dir,
         speed: cfg.speed * factor,
         entities,
+        carBodyKey: String(cfg.row),
       };
     };
 
@@ -750,7 +755,7 @@ export function createFrogger(
       const isTruck = e.type === "truck";
       c.fillStyle = isTruck
         ? p.truckBody
-        : (p.carBodies[String(lane.row)] ?? p.carDefault);
+        : (p.carBodies[lane.carBodyKey] ?? p.carDefault);
       c.fillRect(x + pad, y + pad, w - pad * 2, cell - pad * 2);
       // Cabina diferenciada del camión.
       if (isTruck) {
