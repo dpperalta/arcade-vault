@@ -351,6 +351,11 @@ export function createFrogger(
   let lastLevel = -1;
   let lastPhase: GamePhase | null = null;
 
+  // SPEC 12 — Caché de la fuente del HUD. La cadena solo depende de world.cell,
+  // que únicamente cambia en resize(); antes se recomponía en cada frame.
+  let hudFontCell = -1;
+  let hudFontStr = "";
+
   function newFrog(): Frog {
     const startCol = Math.floor(COLS / 2);
     return {
@@ -915,7 +920,11 @@ export function createFrogger(
     const cell = world.cell;
     const p = world.palette;
     const boardW = COLS * cell;
-    const fs = Math.max(11, cell * 0.34);
+    // La cadena de c.font solo cambia cuando cambia el tamaño de celda.
+    if (cell !== hudFontCell) {
+      hudFontCell = cell;
+      hudFontStr = `${Math.max(11, cell * 0.34)}px "Geist Mono", monospace`;
+    }
 
     // Barra de tiempo: franja fina en el borde superior del tablero (fila 0).
     const tRatio = clamp(roundTime / roundTimeForLevel(level), 0, 1);
@@ -928,7 +937,7 @@ export function createFrogger(
     c.fillRect(world.offX, world.offY, boardW * tRatio, barH);
 
     c.save();
-    c.font = `${fs}px "Geist Mono", monospace`;
+    c.font = hudFontStr;
     c.textBaseline = "top";
     const ty = world.offY + barH + cell * 0.08;
     // Score arriba-izquierda.
