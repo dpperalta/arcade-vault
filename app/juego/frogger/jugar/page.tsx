@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
@@ -35,6 +36,19 @@ const PAD: GamepadConfig = {
   a: null,
   b: null,
 };
+
+// SPEC 12 — Medidor de rendimiento. El chunk solo se descarga si se monta,
+// así que sin `?fps=1` no se importa ni se ejecuta nada.
+const PerfOverlay = dynamic(() => import("../../../components/PerfOverlay"), {
+  ssr: false,
+});
+
+// `useSearchParams` vive aislado en este componente: envuelto en <Suspense>,
+// suspende solo esta rama y no obliga a renderizar toda la página en cliente.
+function PerfGate() {
+  const on = useSearchParams().get("fps") === "1";
+  return on ? <PerfOverlay /> : null;
+}
 
 const INITIAL_STATE: GameState = {
   score: 0,
@@ -98,6 +112,10 @@ export default function FroggerPlayer() {
 
   return (
     <div className="av-player fade-in">
+      <Suspense fallback={null}>
+        <PerfGate />
+      </Suspense>
+
       <div className="player-hud">
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div className="hud-stat">
