@@ -311,16 +311,384 @@ export function createFrogger(
     }
   }
 
-  // ── Update / Draw (se implementan en pasos 4–7) ──────────────────────────────
-  function update(_dt: number) {
-    // Lógica de entidades, salto de la rana, soporte, colisiones y temporizador.
+  // ── Helpers de geometría y zonas ─────────────────────────────────────────────
+  const clamp = (v: number, lo: number, hi: number) =>
+    Math.max(lo, Math.min(hi, v));
+
+  const isRiverRow = (row: number) =>
+    row >= ROW_RIVER_TOP && row <= ROW_RIVER_BOT;
+
+  function laneAt(row: number): Lane | null {
+    return lanes.find((l) => l.row === row) ?? null;
+  }
+
+  // Layout de las 5 bocas: boca i ocupa las columnas {1+3i, 2+3i}; las columnas
+  // 0,3,6,9,12,15 son muro/hueco. Devuelve el índice de boca o -1 si no hay boca.
+  function goalIndexForCol(col: number): number {
+    for (let i = 0; i < GOAL_COUNT; i++) {
+      if (col === 1 + 3 * i || col === 2 + 3 * i) return i;
+    }
+    return -1;
+  }
+
+  // ── Stubs rellenados en pasos 5–7 ────────────────────────────────────────────
+  // Colisión con vehículos de carretera (Paso 5).
+  function checkRoadCollision(): boolean {
+    return false;
+  }
+  // Entidad de río que soporta a la rana, o null si está sobre el agua (Paso 5).
+  function getSupport(): Entity | null {
+    return null;
+  }
+  // Resuelve la celda de aterrizaje tras completar un salto: muerte / meta /
+  // puntuación por avance (Paso 5).
+  function resolveCell() {
+    // Paso 5
+  }
+  // Ronda completada: reinicia rana, bocas, sube nivel, reconstruye carriles (Paso 6).
+  function completeRound() {
+    // Paso 6
+  }
+  // Muerte de la rana: resta vida, reposiciona o dispara game over (Paso 7).
+  function killFrog() {
+    // Paso 7
+  }
+
+  // ── Salto de la rana ─────────────────────────────────────────────────────────
+  function startHop(dir: Direction) {
+    // Base entera: en el río la rana viaja con col fraccionaria sobre el tronco.
+    const baseCol = Math.round(frog.col);
+    let tc = baseCol;
+    let tr = frog.row;
+    if (dir === "up") tr--;
+    else if (dir === "down") tr++;
+    else if (dir === "left") tc--;
+    else tc++;
+
+    // No puede salir por los bordes laterales ni por arriba/abajo del tablero.
+    tc = clamp(tc, 0, COLS - 1);
+    tr = clamp(tr, ROW_GOALS, ROW_START);
+
+    frog.facing = dir;
+    // Si el destino coincide con el origen (choca con un borde), solo reorienta.
+    if (tc === baseCol && tr === frog.row) {
+      frog.col = baseCol;
+      return;
+    }
+
+    frog.animating = true;
+    frog.animT = 0;
+    frog.fromCol = frog.col;
+    frog.fromRow = frog.row;
+    frog.targetCol = tc;
+    frog.targetRow = tr;
+  }
+
+  // ── Update ───────────────────────────────────────────────────────────────────
+  function update(dt: number) {
+    if (state !== "playing") return;
+
+    // 1) Avanzar entidades de cada carril y reintroducirlas por el lado opuesto.
+    for (const lane of lanes) {
+      for (const e of lane.entities) {
+        e.col += lane.speed * lane.dir * dt;
+        if (lane.dir === 1 && e.col > COLS) e.col = -e.width;
+        else if (lane.dir === -1 && e.col + e.width < 0) e.col = COLS;
+
+        // Ciclo de inmersión de las tortugas (visible → sumergida → visible).
+        if (e.type === "turtle") {
+          e.diveT = (e.diveT ?? 0) + dt;
+          const period = TURTLE_VISIBLE + TURTLE_SUBMERGED;
+          if (e.diveT >= period) e.diveT -= period;
+          e.submerged = e.diveT >= TURTLE_VISIBLE;
+        }
+      }
+    }
+
+    // 2) Salto de la rana.
+    if (frog.animating) {
+      frog.animT += dt * 1000; // dt está en segundos; animT en ms
+      if (frog.animT >= HOP_MS) {
+        frog.col = frog.targetCol;
+        frog.row = frog.targetRow;
+        frog.animating = false;
+        frog.animT = 0;
+        resolveCell(); // muerte / meta / puntuación (Paso 5)
+      }
+    } else if (pendingDir) {
+      startHop(pendingDir);
+      pendingDir = null;
+    } else if (isRiverRow(frog.row)) {
+      // En el río y en reposo: si hay soporte, la rana viaja con la entidad;
+      // si no, o si el arrastre la saca del tablero, muere.
+      const sup = getSupport();
+      if (sup) {
+        const lane = laneAt(frog.row);
+        if (lane) frog.col += lane.speed * lane.dir * dt;
+        if (frog.col < 0 || frog.col > COLS - 1) killFrog();
+      } else {
+        killFrog(); // cae al agua
+      }
+    }
+
+    // 3) Colisión con vehículos (en reposo dentro de la carretera).
+    if (!frog.animating && checkRoadCollision()) killFrog();
+
+    // 4) Temporizador de ronda.
+    roundTime -= dt;
+    if (roundTime <= 0) killFrog();
+  }
+
+  // ── Draw ─────────────────────────────────────────────────────────────────────
+  function px(col: number): number {
+    return world.offX + col * world.cell;
+  }
+  function py(row: number): number {
+    return world.offY + row * world.cell;
+  }
+
+  function fillRows(rowA: number, rowB: number, color: string) {
+    const c = world.ctx;
+    c.fillStyle = color;
+    c.fillRect(
+      world.offX,
+      py(rowA),
+      COLS * world.cell,
+      (rowB - rowA + 1) * world.cell,
+    );
+  }
+
+  function drawEntity(lane: Lane, e: Entity) {
+    const c = world.ctx;
+    const cell = world.cell;
+    const x = px(e.col);
+    const y = py(lane.row);
+    const w = e.width * cell;
+    const pad = cell * 0.12;
+
+    if (e.type === "car" || e.type === "truck") {
+      const bodyColors: Record<string, string> = {
+        "8": "#f59e0b",
+        "9": "#38bdf8",
+        "10": "#ef4444",
+        "11": "#a3a3a3",
+        "12": "#ec4899",
+      };
+      const isTruck = e.type === "truck";
+      c.fillStyle = isTruck
+        ? "#8b8b93"
+        : (bodyColors[String(lane.row)] ?? "#ef4444");
+      c.fillRect(x + pad, y + pad, w - pad * 2, cell - pad * 2);
+      // Cabina diferenciada del camión.
+      if (isTruck) {
+        c.fillStyle = "#5b5b63";
+        const cabW = cell * 0.6;
+        const cabX = lane.dir === 1 ? x + w - pad - cabW : x + pad;
+        c.fillRect(cabX, y + pad, cabW, cell - pad * 2);
+      }
+      // Ruedas.
+      c.fillStyle = "#0a0a0f";
+      const wr = cell * 0.08;
+      const wy1 = y + cell - pad - wr;
+      c.beginPath();
+      c.arc(x + pad + wr * 2, wy1, wr, 0, Math.PI * 2);
+      c.arc(x + w - pad - wr * 2, wy1, wr, 0, Math.PI * 2);
+      c.fill();
+    } else if (e.type === "log") {
+      c.fillStyle = "#7c4a21";
+      c.fillRect(x, y + pad, w, cell - pad * 2);
+      // Textura de líneas de la madera.
+      c.strokeStyle = "rgba(60,30,10,0.55)";
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let lx = x + cell * 0.3; lx < x + w; lx += cell * 0.5) {
+        c.moveTo(lx, y + pad);
+        c.lineTo(lx, y + cell - pad);
+      }
+      c.stroke();
+    } else if (e.type === "turtle") {
+      // Cada celda del grupo es una tortuga.
+      for (let i = 0; i < e.width; i++) {
+        const cx = px(e.col + i) + cell / 2;
+        const cy = y + cell / 2;
+        const r = cell * 0.36;
+        if (e.submerged) {
+          c.strokeStyle = "rgba(52,211,153,0.4)";
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.arc(cx, cy, r, 0, Math.PI * 2);
+          c.stroke();
+        } else {
+          c.fillStyle = "#0e9f6e";
+          c.beginPath();
+          c.arc(cx, cy, r, 0, Math.PI * 2);
+          c.fill();
+          // Patrón de escamas.
+          c.strokeStyle = "rgba(6,60,40,0.6)";
+          c.lineWidth = 1;
+          c.beginPath();
+          c.arc(cx, cy, r * 0.55, 0, Math.PI * 2);
+          c.stroke();
+        }
+      }
+    }
+  }
+
+  function drawGoals() {
+    const c = world.ctx;
+    const cell = world.cell;
+    for (let i = 0; i < GOAL_COUNT; i++) {
+      const startCol = 1 + 3 * i;
+      const x = px(startCol);
+      const y = py(ROW_GOALS);
+      const w = 2 * cell;
+      // Nenúfar/boca: rectángulo verde oscuro con borde dorado.
+      c.fillStyle = "#0a3d1f";
+      c.fillRect(x, y, w, cell);
+      c.strokeStyle = "#d4af37";
+      c.lineWidth = 2;
+      c.strokeRect(x + 1, y + 1, w - 2, cell - 2);
+      // Si está ocupada, dibujar silueta de rana dentro.
+      if (goals[i]) {
+        c.fillStyle = "#4ade80";
+        c.beginPath();
+        c.ellipse(
+          x + w / 2,
+          y + cell / 2,
+          cell * 0.28,
+          cell * 0.24,
+          0,
+          0,
+          Math.PI * 2,
+        );
+        c.fill();
+      }
+    }
+  }
+
+  function drawFrog() {
+    const c = world.ctx;
+    const cell = world.cell;
+    // Posición interpolada durante el salto.
+    let fc = frog.col;
+    let fr = frog.row;
+    if (frog.animating) {
+      const t = Math.min(frog.animT / HOP_MS, 1);
+      fc = frog.fromCol + (frog.targetCol - frog.fromCol) * t;
+      fr = frog.fromRow + (frog.targetRow - frog.fromRow) * t;
+    }
+    const cx = px(fc) + cell / 2;
+    const cy = py(fr) + cell / 2;
+
+    c.save();
+    c.shadowColor = "#4ade80";
+    c.shadowBlur = 8;
+    // Patas extendidas durante el salto.
+    if (frog.animating) {
+      c.fillStyle = "#16a34a";
+      const legR = cell * 0.1;
+      for (const sx of [-1, 1]) {
+        c.beginPath();
+        c.arc(cx + sx * cell * 0.32, cy + cell * 0.22, legR, 0, Math.PI * 2);
+        c.fill();
+      }
+    }
+    // Cuerpo.
+    c.fillStyle = "#4ade80";
+    c.beginPath();
+    c.ellipse(cx, cy, cell * 0.35, cell * 0.3, 0, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
+
+    // Ojos (dos círculos blancos con pupila), desplazados según orientación.
+    const fwd: Record<Direction, [number, number]> = {
+      up: [0, -1],
+      down: [0, 1],
+      left: [-1, 0],
+      right: [1, 0],
+    };
+    const [dx, dy] = fwd[frog.facing];
+    const perpX = dy;
+    const perpY = dx;
+    const eyeOff = cell * 0.16;
+    const eyeFwd = cell * 0.14;
+    for (const sgn of [-1, 1]) {
+      const ex = cx + dx * eyeFwd + perpX * eyeOff * sgn;
+      const ey = cy + dy * eyeFwd + perpY * eyeOff * sgn;
+      c.fillStyle = "#fff";
+      c.beginPath();
+      c.arc(ex, ey, cell * 0.08, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = "#0a0a0f";
+      c.beginPath();
+      c.arc(ex, ey, cell * 0.04, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+
+  function drawHud() {
+    const c = world.ctx;
+    const cell = world.cell;
+    const boardW = COLS * cell;
+    const fs = Math.max(11, cell * 0.34);
+
+    // Barra de tiempo: franja fina en el borde superior del tablero (fila 0).
+    const tRatio = clamp(roundTime / roundTimeForLevel(level), 0, 1);
+    const barH = Math.max(4, cell * 0.14);
+    c.fillStyle = "rgba(0,0,0,0.5)";
+    c.fillRect(world.offX, world.offY, boardW, barH);
+    const barColor =
+      tRatio > 0.5 ? "#4ade80" : tRatio > 0.25 ? "#facc15" : "#ef4444";
+    c.fillStyle = barColor;
+    c.fillRect(world.offX, world.offY, boardW * tRatio, barH);
+
+    c.save();
+    c.font = `${fs}px "Geist Mono", monospace`;
+    c.textBaseline = "top";
+    const ty = world.offY + barH + cell * 0.08;
+    // Score arriba-izquierda.
+    c.fillStyle = "#fff";
+    c.textAlign = "left";
+    c.fillText(String(score), world.offX + cell * 0.15, ty);
+    // Nivel arriba-centro.
+    c.textAlign = "center";
+    c.fillStyle = "#facc15";
+    c.fillText(`NIVEL ${level}`, world.offX + boardW / 2, ty);
+    c.restore();
+
+    // Vidas como iconos de rana arriba-derecha.
+    const r = cell * 0.12;
+    for (let i = 0; i < lives; i++) {
+      const lx = world.offX + boardW - cell * 0.25 - i * (r * 2.6) - r;
+      const ly = world.offY + barH + cell * 0.22;
+      c.fillStyle = "#4ade80";
+      c.beginPath();
+      c.arc(lx, ly, r, 0, Math.PI * 2);
+      c.fill();
+    }
   }
 
   function draw() {
-    // Placeholder: fondo. El dibujo por zonas y entidades llega en el Paso 4.
     const c = world.ctx;
+    // Fondo del canvas (bandas fuera del tablero).
     c.fillStyle = "#05070f";
     c.fillRect(0, 0, world.W, world.H);
+
+    // Fondos por zona.
+    fillRows(ROW_GOALS, ROW_GOALS, "#06210f"); // banda de metas
+    fillRows(ROW_RIVER_TOP, ROW_RIVER_BOT, "#0b2545"); // río
+    fillRows(ROW_SAFE_MID, ROW_SAFE_MID, "#123a1f"); // zona segura media
+    fillRows(ROW_ROAD_TOP, ROW_ROAD_BOT, "#131319"); // carretera
+    fillRows(ROW_START, ROW_START, "#123a1f"); // base de inicio
+
+    // Entidades por carril.
+    for (const lane of lanes) {
+      for (const e of lane.entities) drawEntity(lane, e);
+    }
+
+    drawGoals();
+    drawFrog();
+    drawHud();
   }
 
   // ── Loop ─────────────────────────────────────────────────────────────────────
@@ -392,14 +760,9 @@ export function createFrogger(
   // Referencias reservadas para pasos posteriores (evita warnings de no-usado).
   void CANVAS_W;
   void CANVAS_H;
-  void ROW_GOALS;
-  void ROW_RIVER_TOP;
-  void ROW_RIVER_BOT;
-  void ROW_SAFE_MID;
-  void ROW_ROAD_TOP;
-  void ROW_ROAD_BOT;
-  void HOP_MS;
-  void SPEED_SCALE;
+  void maxRowReached;
+  void goalIndexForCol;
+  void completeRound;
   void PTS_ADVANCE;
   void PTS_GOAL;
   void PTS_ROUND;
