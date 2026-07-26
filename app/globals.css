@@ -1699,7 +1699,18 @@ a { color: inherit; text-decoration: none; }
 
   /* CRT con menos marco para maximizar el canvas (aspect 4/3 intacto) */
   .av-player .crt { padding: 12px; border-radius: 16px; }
-  .av-player .crt-bottom { font-size: 7px; margin-top: 8px; }
+  /* La regleta del CRT no debe envolver: con 3 textos y poco ancho, las líneas
+     se entremezclan y quedan ilegibles. Se mantienen en una sola línea. */
+  .av-player .crt-bottom {
+    font-size: 7px;
+    margin-top: 8px;
+    gap: 8px;
+    padding: 0 2px;
+    letter-spacing: 0.1em;
+  }
+  .av-player .crt-bottom > * { white-space: nowrap; }
+  /* El ancho de un teléfono solo da para dos bloques: se cae el de "CARGA". */
+  .av-player .crt-bottom > *:last-child { display: none; }
 
   /* Mando abajo */
   .av-player .touch-gamepad { margin-top: 12px; }
@@ -1739,4 +1750,10 @@ a { color: inherit; text-decoration: none; }
   .modal h2 { font-size: 18px; margin-bottom: 12px; }
   .modal .final { font-size: 28px; }
   .modal .actions .btn { padding: 10px 14px; font-size: 8px; }
+  /* El campo de iniciales + GUARDAR no caben en una fila de teléfono:
+     el botón se salía del modal y quedaba cortado. Se apilan. */
+  .modal .input-row { flex-direction: column; margin: 16px 0 10px; }
+  /* En columna, el flex:1 del input lo aplastaría por debajo del área táctil. */
+  .modal .input-row input { flex: 0 0 auto; height: 44px; }
+  .modal .input-row .btn { width: 100%; padding: 12px 14px; font-size: 8px; }
 }
