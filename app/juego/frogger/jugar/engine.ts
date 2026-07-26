@@ -65,6 +65,8 @@ const MIN_TIME = 8; // cota inferior del temporizador en niveles altos
 const TIME_STEP = 1; // s que se restan al temporizador por nivel
 const SPEED_SCALE = 0.15; // +15 % de velocidad por nivel
 const GOAL_COUNT = 5; // bocas destino a rellenar por ronda
+const TURTLE_VISIBLE = 3; // s que un grupo de tortugas permanece a flote (soporte)
+const TURTLE_SUBMERGED = 1.5; // s que permanece bajo el agua (sin soporte)
 
 // Puntuación
 const PTS_ADVANCE = 10; // por celda avanzada hacia arriba (primera vez en la ronda)
@@ -204,9 +206,101 @@ export function createFrogger(
     return Math.max(BASE_TIME - (lvl - 1) * TIME_STEP, MIN_TIME);
   }
 
-  // buildLanes se implementa en el Paso 3.
-  function buildLanes(_level: number): Lane[] {
-    return [];
+  // Construye los carriles de carretera (filas 8–12) y río (filas 1–6) para un
+  // nivel dado. Cada nivel multiplica todas las velocidades por (1+15%)^(nivel-1).
+  // Las tortugas se modelan como una entidad `turtle` de ancho = tamaño del grupo
+  // (2–3), de modo que soporte, colisión e inmersión operan sobre el grupo entero.
+  function buildLanes(lvl: number): Lane[] {
+    const factor = Math.pow(1 + SPEED_SCALE, lvl - 1);
+
+    // Config por carril: sentido, velocidad base (celdas/s), y layout de entidades.
+    interface LaneCfg {
+      row: number;
+      dir: 1 | -1;
+      speed: number; // celdas/segundo (nivel 1)
+      type: Entity["type"];
+      width: number; // ancho de cada entidad (celdas); en tortugas = tamaño de grupo
+      count: number; // nº de entidades en el carril
+      gap: number; // hueco entre entidades (celdas, ≥1 para ser atravesable)
+    }
+
+    // Carretera (fila 12 = la más cercana al inicio, arriba hacia peligro creciente).
+    const roadCfgs: LaneCfg[] = [
+      { row: 12, dir: -1, speed: 1.6, type: "car", width: 1, count: 4, gap: 3 },
+      {
+        row: 11,
+        dir: 1,
+        speed: 1.1,
+        type: "truck",
+        width: 3,
+        count: 3,
+        gap: 4,
+      },
+      { row: 10, dir: -1, speed: 2.4, type: "car", width: 1, count: 4, gap: 3 },
+      { row: 9, dir: 1, speed: 1.9, type: "car", width: 2, count: 3, gap: 4 },
+      {
+        row: 8,
+        dir: -1,
+        speed: 3.0,
+        type: "truck",
+        width: 2,
+        count: 3,
+        gap: 4,
+      },
+    ];
+
+    // Río (fila 6 = la más cercana a la zona segura). Troncos y grupos de tortugas.
+    const riverCfgs: LaneCfg[] = [
+      { row: 6, dir: 1, speed: 1.4, type: "log", width: 3, count: 3, gap: 3 },
+      {
+        row: 5,
+        dir: -1,
+        speed: 1.9,
+        type: "turtle",
+        width: 3,
+        count: 3,
+        gap: 3,
+      },
+      { row: 4, dir: 1, speed: 2.2, type: "log", width: 2, count: 4, gap: 2 },
+      {
+        row: 3,
+        dir: -1,
+        speed: 1.6,
+        type: "turtle",
+        width: 2,
+        count: 3,
+        gap: 3,
+      },
+      { row: 2, dir: 1, speed: 1.2, type: "log", width: 4, count: 3, gap: 3 },
+      { row: 1, dir: -1, speed: 2.6, type: "log", width: 3, count: 3, gap: 3 },
+    ];
+
+    const makeLane = (cfg: LaneCfg): Lane => {
+      const entities: Entity[] = [];
+      const period = cfg.width + cfg.gap;
+      for (let i = 0; i < cfg.count; i++) {
+        const e: Entity = {
+          col: i * period,
+          width: cfg.width,
+          type: cfg.type,
+        };
+        if (cfg.type === "turtle") {
+          e.submerged = false;
+          // Fase inicial escalonada del ciclo de inmersión, para que no se
+          // sumerjan todos los grupos a la vez.
+          e.diveT = Math.random() * (TURTLE_VISIBLE + TURTLE_SUBMERGED);
+        }
+        entities.push(e);
+      }
+      return {
+        row: cfg.row,
+        dir: cfg.dir,
+        speed: cfg.speed * factor,
+        entities,
+      };
+    };
+
+    return [...roadCfgs, ...riverCfgs].map(makeLane);
   }
 
   function enterGameOver() {
