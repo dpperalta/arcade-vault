@@ -1,6 +1,6 @@
 # SPEC 10 — Controles táctiles móviles para los juegos
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Fecha:** 2026-07-22
 - **Depende de:** SPEC 05 (patrón motor/página en canvas), 07, 08, 09 (los cuatro juegos jugables) y de la convención de skins por engine.
 - **Objetivo (una frase):** Que los cuatro juegos jugables (Asteroids, Tetris, Arkanoid, Snake) se puedan jugar en un teléfono táctil en vertical, mostrando en dispositivos `pointer: coarse` un mando en pantalla (cruceta de 4 direcciones + 2 botones) bajo el canvas que inyecta input en el motor existente, sin alterar la jugabilidad ni la experiencia en desktop.
