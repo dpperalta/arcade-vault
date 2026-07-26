@@ -329,7 +329,13 @@ export function createFrogger(
   let gameOverFired = false;
   let raf = 0;
   let lastTime: number | null = null;
-  let lastEmitted = "";
+  // SPEC 12 — Último estado emitido, desglosado en escalares. Antes era una
+  // clave `${score}|${lives}|...`, un string nuevo por frame aunque se
+  // descartara al instante.
+  let lastScore = -1;
+  let lastLives = -1;
+  let lastLevel = -1;
+  let lastPhase: GamePhase | null = null;
 
   function newFrog(): Frog {
     const startCol = Math.floor(COLS / 2);
@@ -353,12 +359,24 @@ export function createFrogger(
     return "playing";
   }
 
+  // Se llama una vez por frame desde draw(): compara escalares y solo construye
+  // el objeto GameState cuando algo cambió de verdad (SPEC 12).
   function emitState(force = false) {
-    const snap: GameState = { score, lives, level, phase: phase() };
-    const key = `${snap.score}|${snap.lives}|${snap.level}|${snap.phase}`;
-    if (!force && key === lastEmitted) return;
-    lastEmitted = key;
-    opts.onState(snap);
+    const ph = phase();
+    if (
+      !force &&
+      score === lastScore &&
+      lives === lastLives &&
+      level === lastLevel &&
+      ph === lastPhase
+    ) {
+      return;
+    }
+    lastScore = score;
+    lastLives = lives;
+    lastLevel = level;
+    lastPhase = ph;
+    opts.onState({ score, lives, level, phase: ph });
   }
 
   // ── Setup ────────────────────────────────────────────────────────────────────
