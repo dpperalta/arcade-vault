@@ -423,9 +423,22 @@ export function createFrogger(
     pendingDir = null;
     // El HUD React refleja el nuevo nivel en el próximo emitState() del loop.
   }
-  // Muerte de la rana: resta vida, reposiciona o dispara game over (Paso 7).
+  // Muerte de la rana: resta una vida. Con 0 vidas → game over; si quedan vidas,
+  // la rana vuelve a la base y el temporizador se reinicia. Las bocas ya
+  // ocupadas se conservan durante la ronda.
   function killFrog() {
-    // Paso 7
+    if (state !== "playing") return;
+    lives -= 1;
+    if (lives <= 0) {
+      lives = 0;
+      emitState(true); // notifica onLivesChange(0) antes del game over
+      enterGameOver();
+      return;
+    }
+    frog = newFrog();
+    pendingDir = null;
+    maxRowReached = ROW_START;
+    roundTime = roundTimeForLevel(level);
   }
 
   // ── Salto de la rana ─────────────────────────────────────────────────────────
