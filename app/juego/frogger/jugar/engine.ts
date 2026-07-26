@@ -249,6 +249,16 @@ const PTS_TIME_MULT = 10; // bonus de tiempo = tiempo_restante × 10
 // ── Tipos locales (no exportados) ──────────────────────────────────────────────
 type Direction = "up" | "down" | "left" | "right";
 
+// SPEC 12 — Constantes de dibujo promovidas a nivel de módulo. Antes nacían
+// dentro de drawFrog(), es decir 60 veces por segundo.
+const FWD: Record<Direction, readonly [number, number]> = {
+  up: [0, -1],
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+};
+const SIGNS = [-1, 1] as const; // patas y ojos: par simétrico
+
 interface Entity {
   col: number; // posición horizontal en celdas (fraccionaria)
   width: number; // ancho en celdas
@@ -867,7 +877,7 @@ export function createFrogger(
     if (frog.animating) {
       c.fillStyle = p.frogLeg;
       const legR = cell * 0.1;
-      for (const sx of [-1, 1]) {
+      for (const sx of SIGNS) {
         c.beginPath();
         c.arc(cx + sx * cell * 0.32, cy + cell * 0.22, legR, 0, Math.PI * 2);
         c.fill();
@@ -881,18 +891,12 @@ export function createFrogger(
     c.restore();
 
     // Ojos (dos círculos blancos con pupila), desplazados según orientación.
-    const fwd: Record<Direction, [number, number]> = {
-      up: [0, -1],
-      down: [0, 1],
-      left: [-1, 0],
-      right: [1, 0],
-    };
-    const [dx, dy] = fwd[frog.facing];
+    const [dx, dy] = FWD[frog.facing];
     const perpX = dy;
     const perpY = dx;
     const eyeOff = cell * 0.16;
     const eyeFwd = cell * 0.14;
-    for (const sgn of [-1, 1]) {
+    for (const sgn of SIGNS) {
       const ex = cx + dx * eyeFwd + perpX * eyeOff * sgn;
       const ey = cy + dy * eyeFwd + perpY * eyeOff * sgn;
       c.fillStyle = p.eye;
