@@ -56,6 +56,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      profiles: {
+        Row: {
+          created_at: string;
+          id: string;
+          player_name: string;
+        };
+        Insert: {
+          created_at?: string;
+          id: string;
+          player_name: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          player_name?: string;
+        };
+        Relationships: [];
+      };
       scores: {
         Row: {
           created_at: string;
