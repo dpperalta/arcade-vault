@@ -1,6 +1,6 @@
 # SPEC 12 — Rendimiento de Frogger: cero asignaciones por frame y cero re-renders innecesarios
 
-- **Estado:** Aprobado
+- **Estado:** Implementado
 - **Fecha:** 2026-07-26
 - **Depende de:** `specs/game-jam/frogger/01-frogger-core.md` (motor y página de Frogger), SPEC 10 (`TouchGamepad`, `useCoarsePointer`). No cambia el comportamiento de ninguna.
 - **Objetivo (una frase):** Eliminar los tirones y el crecimiento de memoria de Frogger instrumentando el juego con un overlay de FPS/frame-time/heap activable por `?fps=1`, y suprimiendo tanto las asignaciones por frame del bucle de dibujo como los re-renders innecesarios de React, **sin cambiar un solo píxel de lo que se ve ni nada de la jugabilidad**.
