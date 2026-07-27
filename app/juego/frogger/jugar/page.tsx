@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { GAMES } from "../../../data/games";
@@ -115,12 +115,41 @@ export default function FroggerPlayer() {
   const paused = phase === "paused";
   const defaultName = user?.name ?? "INVITADO";
 
-  const restart = () => {
+  const restart = useCallback(() => {
     setOver(false);
     setSaved(false);
     setSaveWarn(false);
     handleRef.current?.restart();
-  };
+  }, []);
+
+  // SPEC 12 — Handlers estables: todos operan sobre `handleRef`, que nunca
+  // cambia de identidad, así que no necesitan dependencias. Sin esto, cada
+  // render daría props nuevas al mando y anularía su React.memo.
+  const onPadInput = useCallback((code: string, down: boolean) => {
+    handleRef.current?.input(code, down);
+  }, []);
+
+  // Depende de `paused`, así que cambia de identidad al pausar y al reanudar
+  // —dos veces por partida—, nunca dentro del bucle.
+  const togglePause = useCallback(() => {
+    const h = handleRef.current;
+    if (!h) return;
+    if (paused) h.resume();
+    else h.pause();
+  }, [paused]);
+
+  const onForceGameOver = useCallback(() => {
+    handleRef.current?.forceGameOver();
+  }, []);
+
+  const onExit = useCallback(() => {
+    router.push("/juego/frogger");
+  }, [router]);
+
+  const onSkinChange = useCallback((key: SkinName) => {
+    setSkin(key);
+    handleRef.current?.setSkin(key);
+  }, []);
 
   return (
     <div className="av-player fade-in">
@@ -165,11 +194,7 @@ export default function FroggerPlayer() {
                 className="av-skin-select"
                 aria-label="Skin del juego"
                 value={skin}
-                onChange={(e) => {
-                  const key = e.target.value as SkinName;
-                  setSkin(key);
-                  handleRef.current?.setSkin(key);
-                }}
+                onChange={(e) => onSkinChange(e.target.value as SkinName)}
               >
                 {SKIN_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -192,34 +217,20 @@ export default function FroggerPlayer() {
                   role="radio"
                   aria-checked={skin === o.key}
                   className={`chip${skin === o.key ? " active" : ""}`}
-                  onClick={() => {
-                    setSkin(o.key);
-                    handleRef.current?.setSkin(o.key);
-                  }}
+                  onClick={() => onSkinChange(o.key)}
                 >
                   {o.label}
                 </button>
               ))}
             </div>
           )}
-          <button
-            className="btn yellow"
-            onClick={() =>
-              paused ? handleRef.current?.resume() : handleRef.current?.pause()
-            }
-          >
+          <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
-          <button
-            className="btn magenta"
-            onClick={() => handleRef.current?.forceGameOver()}
-          >
+          <button className="btn magenta" onClick={onForceGameOver}>
             FIN
           </button>
-          <button
-            className="btn ghost"
-            onClick={() => router.push("/juego/frogger")}
-          >
+          <button className="btn ghost" onClick={onExit}>
             SALIR
           </button>
         </div>
@@ -268,12 +279,7 @@ export default function FroggerPlayer() {
         </div>
       </div>
 
-      {coarse && (
-        <TouchGamepad
-          config={PAD}
-          onInput={(c, d) => handleRef.current?.input(c, d)}
-        />
-      )}
+      {coarse && <TouchGamepad config={PAD} onInput={onPadInput} />}
 
       {over && (
         // `key` fuerza el remontaje en cada partida: sin ella, el defaultValue
