@@ -13,7 +13,7 @@ import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import {
   createFrogger,
   type FroggerHandle,
-  type GameState,
+  type GamePhase,
   type SkinName,
 } from "./engine";
 
@@ -50,12 +50,10 @@ function PerfGate() {
   return on ? <PerfOverlay /> : null;
 }
 
-const INITIAL_STATE: GameState = {
-  score: 0,
-  lives: 3,
-  level: 1,
-  phase: "playing",
-};
+// Formato de cada cifra del HUD. Se escriben por ref, así que el formateo vive
+// aquí y no en el JSX.
+const fmtScore = (n: number) => n.toLocaleString("es-ES");
+const fmtPad2 = (n: number) => String(n).padStart(2, "0");
 
 export default function FroggerPlayer() {
   const router = useRouter();
@@ -64,7 +62,14 @@ export default function FroggerPlayer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<FroggerHandle | null>(null);
 
-  const [gs, setGs] = useState<GameState>(INITIAL_STATE);
+  // SPEC 12 — Las cifras que cambian dentro del bucle de 60 fps se escriben por
+  // ref directo al DOM: no provocan render. Solo `phase` sigue siendo estado,
+  // porque sí controla renderizado real (el overlay EN PAUSA).
+  const scoreRef = useRef<HTMLDivElement | null>(null);
+  const livesRef = useRef<HTMLDivElement | null>(null);
+  const levelRef = useRef<HTMLDivElement | null>(null);
+
+  const [phase, setPhase] = useState<GamePhase>("playing");
   const [over, setOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
@@ -79,7 +84,14 @@ export default function FroggerPlayer() {
     if (!canvas) return;
 
     const handle = createFrogger(canvas, {
-      onState: (s) => setGs(s),
+      onState: (s) => {
+        // El motor ya deduplica antes de llamar aquí; estas escrituras no
+        // pasan por React. `setPhase` con el mismo valor no provoca render.
+        if (scoreRef.current) scoreRef.current.textContent = fmtScore(s.score);
+        if (livesRef.current) livesRef.current.textContent = fmtPad2(s.lives);
+        if (levelRef.current) levelRef.current.textContent = fmtPad2(s.level);
+        setPhase(s.phase);
+      },
       onGameOver: (fs) => {
         setFinalScore(fs);
         setOver(true);
@@ -99,7 +111,7 @@ export default function FroggerPlayer() {
   }, []);
 
   const coarse = useCoarsePointer();
-  const paused = gs.phase === "paused";
+  const paused = phase === "paused";
   const name = nameEdit ?? user?.name ?? "INVITADO";
 
   const restart = () => {
@@ -126,15 +138,22 @@ export default function FroggerPlayer() {
           </div>
           <div className="hud-stat">
             <div className="l">Puntuación</div>
-            <div className="v">{gs.score.toLocaleString("es-ES")}</div>
+            {/* Valor inicial en el HTML; a partir de ahí lo escribe el motor. */}
+            <div className="v" ref={scoreRef}>
+              {fmtScore(0)}
+            </div>
           </div>
           <div className="hud-stat">
             <div className="l">Vidas</div>
-            <div className="v">{String(gs.lives).padStart(2, "0")}</div>
+            <div className="v" ref={livesRef}>
+              {fmtPad2(3)}
+            </div>
           </div>
           <div className="hud-stat level">
             <div className="l">Nivel</div>
-            <div className="v">{String(gs.level).padStart(2, "0")}</div>
+            <div className="v" ref={levelRef}>
+              {fmtPad2(1)}
+            </div>
           </div>
         </div>
         <div className="hud-actions">
