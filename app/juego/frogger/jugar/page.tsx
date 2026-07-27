@@ -72,8 +72,9 @@ export default function FroggerPlayer() {
   const [phase, setPhase] = useState<GamePhase>("playing");
   const [over, setOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
-  // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
-  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  // SPEC 12 — Entrada no controlada: escribir el nombre re-renderizaba el modal
+  // en cada tecla. El valor se lee del ref al guardar.
+  const nameRef = useRef<HTMLInputElement | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveWarn, setSaveWarn] = useState(false);
   const [skin, setSkin] = useState<SkinName>("clasico");
@@ -112,13 +113,12 @@ export default function FroggerPlayer() {
 
   const coarse = useCoarsePointer();
   const paused = phase === "paused";
-  const name = nameEdit ?? user?.name ?? "INVITADO";
+  const defaultName = user?.name ?? "INVITADO";
 
   const restart = () => {
     setOver(false);
     setSaved(false);
     setSaveWarn(false);
-    setNameEdit(null);
     handleRef.current?.restart();
   };
 
@@ -276,7 +276,9 @@ export default function FroggerPlayer() {
       )}
 
       {over && (
-        <div className="modal-bd">
+        // `key` fuerza el remontaje en cada partida: sin ella, el defaultValue
+        // del input no controlado conservaría el nombre de la partida anterior.
+        <div className="modal-bd" key={finalScore}>
           <div className="modal">
             <h2>FIN DEL JUEGO</h2>
             <div className="final-label">PUNTUACIÓN FINAL</div>
@@ -284,18 +286,23 @@ export default function FroggerPlayer() {
             {!saved ? (
               <div className="input-row">
                 <input
-                  value={name}
-                  onChange={(e) =>
-                    setNameEdit(e.target.value.toUpperCase().slice(0, 10))
-                  }
+                  ref={nameRef}
+                  defaultValue={defaultName}
+                  maxLength={10}
+                  style={{ textTransform: "uppercase" }}
                   placeholder="TUS INICIALES"
                 />
                 <button
                   className="btn yellow"
                   onClick={async () => {
+                    // El `uppercase` del input es solo CSS: se aplica de verdad
+                    // aquí, junto al recorte que ya garantiza maxLength.
+                    const typed = nameRef.current?.value.trim();
                     const { ok } = await insertScore({
                       gameId: "frogger",
-                      playerName: name,
+                      playerName: (typed || defaultName)
+                        .toUpperCase()
+                        .slice(0, 10),
                       score: finalScore,
                     });
                     setSaveWarn(!ok);
