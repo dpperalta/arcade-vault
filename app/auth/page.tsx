@@ -6,16 +6,18 @@ import { useArcade } from "../components/ArcadeProvider";
 
 export default function Auth() {
   const router = useRouter();
-  const { login } = useArcade();
+  const { continueAsGuest } = useArcade();
 
   const [tab, setTab] = useState<"in" | "up">("in");
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
 
+  // Provisional: el paso 6 del SPEC 13 sustituye esto por signUp /
+  // signInWithPassword reales, con mensajes de error y estado de envío.
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    login({ name: (user || "PLAYER1").toUpperCase().slice(0, 10) });
+    continueAsGuest();
     router.push("/biblioteca");
   };
 
@@ -39,10 +41,16 @@ export default function Auth() {
         </div>
 
         <div className="auth-tabs">
-          <button className={tab === "in" ? "on" : ""} onClick={() => setTab("in")}>
+          <button
+            className={tab === "in" ? "on" : ""}
+            onClick={() => setTab("in")}
+          >
             INICIAR SESIÓN
           </button>
-          <button className={tab === "up" ? "on" : ""} onClick={() => setTab("up")}>
+          <button
+            className={tab === "up" ? "on" : ""}
+            onClick={() => setTab("up")}
+          >
             CREAR CUENTA
           </button>
         </div>
@@ -90,7 +98,7 @@ export default function Auth() {
           className="btn ghost"
           style={{ width: "100%", marginTop: 10 }}
           onClick={() => {
-            login(null);
+            continueAsGuest();
             router.push("/biblioteca");
           }}
         >
