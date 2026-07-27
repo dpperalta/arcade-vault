@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { GAMES } from "../../../data/games";
 import { insertScore } from "../../../data/catalog";
 import { useArcade } from "../../../components/ArcadeProvider";
@@ -12,7 +13,7 @@ import { useCoarsePointer } from "../../../components/useCoarsePointer";
 import {
   createFrogger,
   type FroggerHandle,
-  type GameState,
+  type GamePhase,
   type SkinName,
 } from "./engine";
 
@@ -36,12 +37,23 @@ const PAD: GamepadConfig = {
   b: null,
 };
 
-const INITIAL_STATE: GameState = {
-  score: 0,
-  lives: 3,
-  level: 1,
-  phase: "playing",
-};
+// SPEC 12 — Medidor de rendimiento. El chunk solo se descarga si se monta,
+// así que sin `?fps=1` no se importa ni se ejecuta nada.
+const PerfOverlay = dynamic(() => import("../../../components/PerfOverlay"), {
+  ssr: false,
+});
+
+// `useSearchParams` vive aislado en este componente: envuelto en <Suspense>,
+// suspende solo esta rama y no obliga a renderizar toda la página en cliente.
+function PerfGate() {
+  const on = useSearchParams().get("fps") === "1";
+  return on ? <PerfOverlay /> : null;
+}
+
+// Formato de cada cifra del HUD. Se escriben por ref, así que el formateo vive
+// aquí y no en el JSX.
+const fmtScore = (n: number) => n.toLocaleString("es-ES");
+const fmtPad2 = (n: number) => String(n).padStart(2, "0");
 
 export default function FroggerPlayer() {
   const router = useRouter();
@@ -50,11 +62,19 @@ export default function FroggerPlayer() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<FroggerHandle | null>(null);
 
-  const [gs, setGs] = useState<GameState>(INITIAL_STATE);
+  // SPEC 12 — Las cifras que cambian dentro del bucle de 60 fps se escriben por
+  // ref directo al DOM: no provocan render. Solo `phase` sigue siendo estado,
+  // porque sí controla renderizado real (el overlay EN PAUSA).
+  const scoreRef = useRef<HTMLDivElement | null>(null);
+  const livesRef = useRef<HTMLDivElement | null>(null);
+  const levelRef = useRef<HTMLDivElement | null>(null);
+
+  const [phase, setPhase] = useState<GamePhase>("playing");
   const [over, setOver] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
-  // null = no editado: refleja el usuario hidratado (o "INVITADO") hasta que se escriba.
-  const [nameEdit, setNameEdit] = useState<string | null>(null);
+  // SPEC 12 — Entrada no controlada: escribir el nombre re-renderizaba el modal
+  // en cada tecla. El valor se lee del ref al guardar.
+  const nameRef = useRef<HTMLInputElement | null>(null);
   const [saved, setSaved] = useState(false);
   const [saveWarn, setSaveWarn] = useState(false);
   const [skin, setSkin] = useState<SkinName>("clasico");
@@ -65,7 +85,14 @@ export default function FroggerPlayer() {
     if (!canvas) return;
 
     const handle = createFrogger(canvas, {
-      onState: (s) => setGs(s),
+      onState: (s) => {
+        // El motor ya deduplica antes de llamar aquí; estas escrituras no
+        // pasan por React. `setPhase` con el mismo valor no provoca render.
+        if (scoreRef.current) scoreRef.current.textContent = fmtScore(s.score);
+        if (livesRef.current) livesRef.current.textContent = fmtPad2(s.lives);
+        if (levelRef.current) levelRef.current.textContent = fmtPad2(s.level);
+        setPhase(s.phase);
+      },
       onGameOver: (fs) => {
         setFinalScore(fs);
         setOver(true);
@@ -85,19 +112,51 @@ export default function FroggerPlayer() {
   }, []);
 
   const coarse = useCoarsePointer();
-  const paused = gs.phase === "paused";
-  const name = nameEdit ?? user?.name ?? "INVITADO";
+  const paused = phase === "paused";
+  const defaultName = user?.name ?? "INVITADO";
 
-  const restart = () => {
+  const restart = useCallback(() => {
     setOver(false);
     setSaved(false);
     setSaveWarn(false);
-    setNameEdit(null);
     handleRef.current?.restart();
-  };
+  }, []);
+
+  // SPEC 12 — Handlers estables: todos operan sobre `handleRef`, que nunca
+  // cambia de identidad, así que no necesitan dependencias. Sin esto, cada
+  // render daría props nuevas al mando y anularía su React.memo.
+  const onPadInput = useCallback((code: string, down: boolean) => {
+    handleRef.current?.input(code, down);
+  }, []);
+
+  // Depende de `paused`, así que cambia de identidad al pausar y al reanudar
+  // —dos veces por partida—, nunca dentro del bucle.
+  const togglePause = useCallback(() => {
+    const h = handleRef.current;
+    if (!h) return;
+    if (paused) h.resume();
+    else h.pause();
+  }, [paused]);
+
+  const onForceGameOver = useCallback(() => {
+    handleRef.current?.forceGameOver();
+  }, []);
+
+  const onExit = useCallback(() => {
+    router.push("/juego/frogger");
+  }, [router]);
+
+  const onSkinChange = useCallback((key: SkinName) => {
+    setSkin(key);
+    handleRef.current?.setSkin(key);
+  }, []);
 
   return (
     <div className="av-player fade-in">
+      <Suspense fallback={null}>
+        <PerfGate />
+      </Suspense>
+
       <div className="player-hud">
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           <div className="hud-stat">
@@ -108,15 +167,22 @@ export default function FroggerPlayer() {
           </div>
           <div className="hud-stat">
             <div className="l">Puntuación</div>
-            <div className="v">{gs.score.toLocaleString("es-ES")}</div>
+            {/* Valor inicial en el HTML; a partir de ahí lo escribe el motor. */}
+            <div className="v" ref={scoreRef}>
+              {fmtScore(0)}
+            </div>
           </div>
           <div className="hud-stat">
             <div className="l">Vidas</div>
-            <div className="v">{String(gs.lives).padStart(2, "0")}</div>
+            <div className="v" ref={livesRef}>
+              {fmtPad2(3)}
+            </div>
           </div>
           <div className="hud-stat level">
             <div className="l">Nivel</div>
-            <div className="v">{String(gs.level).padStart(2, "0")}</div>
+            <div className="v" ref={levelRef}>
+              {fmtPad2(1)}
+            </div>
           </div>
         </div>
         <div className="hud-actions">
@@ -128,11 +194,7 @@ export default function FroggerPlayer() {
                 className="av-skin-select"
                 aria-label="Skin del juego"
                 value={skin}
-                onChange={(e) => {
-                  const key = e.target.value as SkinName;
-                  setSkin(key);
-                  handleRef.current?.setSkin(key);
-                }}
+                onChange={(e) => onSkinChange(e.target.value as SkinName)}
               >
                 {SKIN_OPTIONS.map((o) => (
                   <option key={o.key} value={o.key}>
@@ -155,34 +217,20 @@ export default function FroggerPlayer() {
                   role="radio"
                   aria-checked={skin === o.key}
                   className={`chip${skin === o.key ? " active" : ""}`}
-                  onClick={() => {
-                    setSkin(o.key);
-                    handleRef.current?.setSkin(o.key);
-                  }}
+                  onClick={() => onSkinChange(o.key)}
                 >
                   {o.label}
                 </button>
               ))}
             </div>
           )}
-          <button
-            className="btn yellow"
-            onClick={() =>
-              paused ? handleRef.current?.resume() : handleRef.current?.pause()
-            }
-          >
+          <button className="btn yellow" onClick={togglePause}>
             {paused ? "REANUDAR" : "PAUSA"}
           </button>
-          <button
-            className="btn magenta"
-            onClick={() => handleRef.current?.forceGameOver()}
-          >
+          <button className="btn magenta" onClick={onForceGameOver}>
             FIN
           </button>
-          <button
-            className="btn ghost"
-            onClick={() => router.push("/juego/frogger")}
-          >
+          <button className="btn ghost" onClick={onExit}>
             SALIR
           </button>
         </div>
@@ -231,15 +279,12 @@ export default function FroggerPlayer() {
         </div>
       </div>
 
-      {coarse && (
-        <TouchGamepad
-          config={PAD}
-          onInput={(c, d) => handleRef.current?.input(c, d)}
-        />
-      )}
+      {coarse && <TouchGamepad config={PAD} onInput={onPadInput} />}
 
       {over && (
-        <div className="modal-bd">
+        // `key` fuerza el remontaje en cada partida: sin ella, el defaultValue
+        // del input no controlado conservaría el nombre de la partida anterior.
+        <div className="modal-bd" key={finalScore}>
           <div className="modal">
             <h2>FIN DEL JUEGO</h2>
             <div className="final-label">PUNTUACIÓN FINAL</div>
@@ -247,18 +292,23 @@ export default function FroggerPlayer() {
             {!saved ? (
               <div className="input-row">
                 <input
-                  value={name}
-                  onChange={(e) =>
-                    setNameEdit(e.target.value.toUpperCase().slice(0, 10))
-                  }
+                  ref={nameRef}
+                  defaultValue={defaultName}
+                  maxLength={10}
+                  style={{ textTransform: "uppercase" }}
                   placeholder="TUS INICIALES"
                 />
                 <button
                   className="btn yellow"
                   onClick={async () => {
+                    // El `uppercase` del input es solo CSS: se aplica de verdad
+                    // aquí, junto al recorte que ya garantiza maxLength.
+                    const typed = nameRef.current?.value.trim();
                     const { ok } = await insertScore({
                       gameId: "frogger",
-                      playerName: name,
+                      playerName: (typed || defaultName)
+                        .toUpperCase()
+                        .slice(0, 10),
                       score: finalScore,
                     });
                     setSaveWarn(!ok);

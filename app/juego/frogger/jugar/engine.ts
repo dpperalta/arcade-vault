@@ -249,6 +249,16 @@ const PTS_TIME_MULT = 10; // bonus de tiempo = tiempo_restante × 10
 // ── Tipos locales (no exportados) ──────────────────────────────────────────────
 type Direction = "up" | "down" | "left" | "right";
 
+// SPEC 12 — Constantes de dibujo promovidas a nivel de módulo. Antes nacían
+// dentro de drawFrog(), es decir 60 veces por segundo.
+const FWD: Record<Direction, readonly [number, number]> = {
+  up: [0, -1],
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+};
+const SIGNS = [-1, 1] as const; // patas y ojos: par simétrico
+
 interface Entity {
   col: number; // posición horizontal en celdas (fraccionaria)
   width: number; // ancho en celdas
@@ -262,6 +272,10 @@ interface Lane {
   speed: number; // px/frame base (escalada por nivel)
   dir: 1 | -1; // sentido del desplazamiento horizontal
   entities: Entity[];
+  // SPEC 12 — `String(row)` precalculado en makeLane(). Se cachea la CLAVE y no
+  // el color ya resuelto: setSkin() reasigna world.palette en vivo, así que el
+  // color debe seguir leyéndose de la paleta activa en cada frame.
+  carBodyKey: string;
 }
 
 interface Frog {
@@ -329,7 +343,18 @@ export function createFrogger(
   let gameOverFired = false;
   let raf = 0;
   let lastTime: number | null = null;
-  let lastEmitted = "";
+  // SPEC 12 — Último estado emitido, desglosado en escalares. Antes era una
+  // clave `${score}|${lives}|...`, un string nuevo por frame aunque se
+  // descartara al instante.
+  let lastScore = -1;
+  let lastLives = -1;
+  let lastLevel = -1;
+  let lastPhase: GamePhase | null = null;
+
+  // SPEC 12 — Caché de la fuente del HUD. La cadena solo depende de world.cell,
+  // que únicamente cambia en resize(); antes se recomponía en cada frame.
+  let hudFontCell = -1;
+  let hudFontStr = "";
 
   function newFrog(): Frog {
     const startCol = Math.floor(COLS / 2);
@@ -353,12 +378,24 @@ export function createFrogger(
     return "playing";
   }
 
+  // Se llama una vez por frame desde draw(): compara escalares y solo construye
+  // el objeto GameState cuando algo cambió de verdad (SPEC 12).
   function emitState(force = false) {
-    const snap: GameState = { score, lives, level, phase: phase() };
-    const key = `${snap.score}|${snap.lives}|${snap.level}|${snap.phase}`;
-    if (!force && key === lastEmitted) return;
-    lastEmitted = key;
-    opts.onState(snap);
+    const ph = phase();
+    if (
+      !force &&
+      score === lastScore &&
+      lives === lastLives &&
+      level === lastLevel &&
+      ph === lastPhase
+    ) {
+      return;
+    }
+    lastScore = score;
+    lastLives = lives;
+    lastLevel = level;
+    lastPhase = ph;
+    opts.onState({ score, lives, level, phase: ph });
   }
 
   // ── Setup ────────────────────────────────────────────────────────────────────
@@ -471,6 +508,7 @@ export function createFrogger(
         dir: cfg.dir,
         speed: cfg.speed * factor,
         entities,
+        carBodyKey: String(cfg.row),
       };
     };
 
@@ -732,7 +770,7 @@ export function createFrogger(
       const isTruck = e.type === "truck";
       c.fillStyle = isTruck
         ? p.truckBody
-        : (p.carBodies[String(lane.row)] ?? p.carDefault);
+        : (p.carBodies[lane.carBodyKey] ?? p.carDefault);
       c.fillRect(x + pad, y + pad, w - pad * 2, cell - pad * 2);
       // Cabina diferenciada del camión.
       if (isTruck) {
@@ -844,7 +882,7 @@ export function createFrogger(
     if (frog.animating) {
       c.fillStyle = p.frogLeg;
       const legR = cell * 0.1;
-      for (const sx of [-1, 1]) {
+      for (const sx of SIGNS) {
         c.beginPath();
         c.arc(cx + sx * cell * 0.32, cy + cell * 0.22, legR, 0, Math.PI * 2);
         c.fill();
@@ -858,18 +896,12 @@ export function createFrogger(
     c.restore();
 
     // Ojos (dos círculos blancos con pupila), desplazados según orientación.
-    const fwd: Record<Direction, [number, number]> = {
-      up: [0, -1],
-      down: [0, 1],
-      left: [-1, 0],
-      right: [1, 0],
-    };
-    const [dx, dy] = fwd[frog.facing];
+    const [dx, dy] = FWD[frog.facing];
     const perpX = dy;
     const perpY = dx;
     const eyeOff = cell * 0.16;
     const eyeFwd = cell * 0.14;
-    for (const sgn of [-1, 1]) {
+    for (const sgn of SIGNS) {
       const ex = cx + dx * eyeFwd + perpX * eyeOff * sgn;
       const ey = cy + dy * eyeFwd + perpY * eyeOff * sgn;
       c.fillStyle = p.eye;
@@ -888,7 +920,11 @@ export function createFrogger(
     const cell = world.cell;
     const p = world.palette;
     const boardW = COLS * cell;
-    const fs = Math.max(11, cell * 0.34);
+    // La cadena de c.font solo cambia cuando cambia el tamaño de celda.
+    if (cell !== hudFontCell) {
+      hudFontCell = cell;
+      hudFontStr = `${Math.max(11, cell * 0.34)}px "Geist Mono", monospace`;
+    }
 
     // Barra de tiempo: franja fina en el borde superior del tablero (fila 0).
     const tRatio = clamp(roundTime / roundTimeForLevel(level), 0, 1);
@@ -901,7 +937,7 @@ export function createFrogger(
     c.fillRect(world.offX, world.offY, boardW * tRatio, barH);
 
     c.save();
-    c.font = `${fs}px "Geist Mono", monospace`;
+    c.font = hudFontStr;
     c.textBaseline = "top";
     const ty = world.offY + barH + cell * 0.08;
     // Score arriba-izquierda.

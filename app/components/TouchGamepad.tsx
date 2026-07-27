@@ -12,7 +12,7 @@
 // - Direcciones/botones sin `code` salen atenuados e inertes.
 // - touch-action:none + preventDefault para no scrollear/zoomear al jugar.
 
-import { useCallback } from "react";
+import { memo, useCallback } from "react";
 
 export type PadDir = "up" | "down" | "left" | "right";
 
@@ -117,7 +117,7 @@ function PadKey({
   );
 }
 
-export default function TouchGamepad({ config, onInput }: TouchGamepadProps) {
+function TouchGamepad({ config, onInput }: TouchGamepadProps) {
   const dir = (d: PadDir) => (
     <PadKey
       ariaLabel={d}
@@ -166,3 +166,9 @@ export default function TouchGamepad({ config, onInput }: TouchGamepadProps) {
     </div>
   );
 }
+
+// SPEC 12 — Memoizado: el mando no depende del estado de la partida, así que no
+// tiene por qué re-renderizarse cuando cambia la puntuación. Es aditivo: en los
+// juegos que aún pasan `onInput` inline simplemente no se aprovecha la
+// optimización, pero el comportamiento es idéntico.
+export default memo(TouchGamepad);
