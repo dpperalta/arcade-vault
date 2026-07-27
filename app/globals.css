@@ -1033,6 +1033,40 @@ a { color: inherit; text-decoration: none; }
 .social { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .social .btn { padding: 12px; font-size: 9px; }
 
+/* Mensajes de estado del formulario de acceso. La etiqueta lleva la voz de la
+   máquina; la frase de debajo dice qué ha pasado y cómo arreglarlo. */
+.auth-msg {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-left-width: 2px;
+}
+.auth-msg .tag {
+  display: block;
+  font-family: var(--pixel);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  margin-bottom: 6px;
+}
+.auth-msg p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+}
+.auth-msg.bad { border-left-color: var(--magenta); }
+.auth-msg.bad .tag { color: var(--magenta); text-shadow: 0 0 8px rgba(255,0,110,0.55); }
+.auth-msg.ok { border-left-color: var(--cyan); }
+.auth-msg.ok .tag { color: var(--cyan); text-shadow: 0 0 8px rgba(0,245,255,0.5); }
+
+/* El sistema de diseño no tenía estado deshabilitado. Se acota a la ficha de
+   acceso para no alterar botones de otras páginas. */
+.auth-card .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.auth-card .btn:disabled:hover { color: inherit; box-shadow: none; }
+
 /* ===== salón ===== */
 .av-hall {
   max-width: 1200px;

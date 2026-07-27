@@ -61,29 +61,38 @@ function nameFromEmail(email: string | null): string {
 }
 
 /**
- * Traduce al español los errores de Supabase, que llegan en inglés.
- * Cualquier mensaje no contemplado cae en un texto genérico: es preferible a
- * enseñar al usuario una cadena en inglés a medio camino.
+ * Códigos de error de Supabase Auth traducidos. Se traduce por `code` y no por
+ * el texto en inglés: el mensaje cambia de redacción entre versiones (p. ej.
+ * `email_address_invalid` llega como `Email address "x" is invalid`), mientras
+ * que el código es estable.
  */
-function translateAuthError(message: string): string {
-  const m = message.toLowerCase();
-  if (m.includes("invalid login credentials"))
-    return "Correo o contraseña incorrectos.";
-  if (m.includes("email not confirmed"))
-    return "Todavía no has confirmado tu correo. Revisa tu bandeja de entrada.";
-  if (
-    m.includes("user already registered") ||
-    m.includes("already been registered")
-  )
-    return "Ese correo ya tiene una cuenta. Inicia sesión.";
-  if (m.includes("password should be at least"))
-    return "La contraseña debe tener al menos 6 caracteres.";
-  if (m.includes("unable to validate email") || m.includes("invalid email"))
-    return "Ese correo no parece válido.";
-  if (m.includes("email rate limit") || m.includes("too many requests"))
-    return "Demasiados intentos. Espera un minuto y vuelve a probar.";
-  if (m.includes("same password"))
-    return "La contraseña nueva debe ser distinta de la anterior.";
+const AUTH_ERRORS: Record<string, string> = {
+  invalid_credentials: "Correo o contraseña incorrectos.",
+  email_not_confirmed:
+    "Todavía no has confirmado tu correo. Revisa tu bandeja de entrada.",
+  user_already_exists: "Ese correo ya tiene una cuenta. Inicia sesión.",
+  email_exists: "Ese correo ya tiene una cuenta. Inicia sesión.",
+  weak_password: "La contraseña debe tener al menos 6 caracteres.",
+  email_address_invalid: "Ese correo no parece válido.",
+  validation_failed:
+    "Revisa los datos: falta algo o no tiene el formato correcto.",
+  over_email_send_rate_limit:
+    "Demasiados intentos. Espera un minuto y vuelve a probar.",
+  over_request_rate_limit:
+    "Demasiados intentos. Espera un minuto y vuelve a probar.",
+  same_password: "La contraseña nueva debe ser distinta de la anterior.",
+  otp_expired: "Ese enlace ha caducado. Pide uno nuevo.",
+  session_expired: "Tu sesión ha caducado. Vuelve a entrar.",
+};
+
+/**
+ * Traduce al español los errores de Supabase, que llegan en inglés. Prioriza el
+ * código; si no lo conoce, cae en un texto genérico, preferible a enseñar una
+ * cadena en inglés a medio camino.
+ */
+function translateAuthError(error: { code?: string; message: string }): string {
+  if (error.code && AUTH_ERRORS[error.code]) return AUTH_ERRORS[error.code];
+  const m = error.message.toLowerCase();
   if (m.includes("failed to fetch") || m.includes("network"))
     return "No hay conexión con el servidor. Inténtalo de nuevo.";
   return "No se ha podido completar la operación. Inténtalo de nuevo.";
@@ -183,7 +192,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
         },
       });
       return error
-        ? { ok: false, error: translateAuthError(error.message) }
+        ? { ok: false, error: translateAuthError(error) }
         : { ok: true };
     },
     [supabase],
@@ -196,7 +205,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
         password,
       });
       return error
-        ? { ok: false, error: translateAuthError(error.message) }
+        ? { ok: false, error: translateAuthError(error) }
         : { ok: true };
     },
     [supabase],
@@ -209,7 +218,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       return error
-        ? { ok: false, error: translateAuthError(error.message) }
+        ? { ok: false, error: translateAuthError(error) }
         : { ok: true };
     },
     [supabase],
@@ -221,7 +230,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
         redirectTo: `${window.location.origin}/auth/recuperar`,
       });
       return error
-        ? { ok: false, error: translateAuthError(error.message) }
+        ? { ok: false, error: translateAuthError(error) }
         : { ok: true };
     },
     [supabase],
@@ -243,7 +252,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
         // 23505 = violación de unicidad en Postgres.
         if (error.code === "23505")
           return { ok: false, error: "Ese nombre ya está en uso." };
-        return { ok: false, error: translateAuthError(error.message) };
+        return { ok: false, error: translateAuthError(error) };
       }
       setProfile({ id: userId, name: next });
       return { ok: true };
