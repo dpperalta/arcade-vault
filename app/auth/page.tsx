@@ -1,21 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useArcade } from "../components/ArcadeProvider";
 
 type Msg = { kind: "bad" | "ok"; tag: string; text: string } | null;
 
+const LINK_ERROR: Msg = {
+  kind: "bad",
+  tag: "> ENLACE NO VÁLIDO",
+  text: "Ese enlace ha caducado o ya se había usado. Vuelve a registrarte o inicia sesión.",
+};
+
+/**
+ * `useSearchParams()` obliga a un límite de Suspense: sin él, `next build`
+ * falla al prerenderizar esta ruta. Con el wrapper, /auth sigue siendo estática.
+ */
 export default function Auth() {
+  return (
+    <Suspense fallback={<div className="av-auth-wrap" />}>
+      <AuthCard />
+    </Suspense>
+  );
+}
+
+function AuthCard() {
   const router = useRouter();
+  const params = useSearchParams();
   const { continueAsGuest, signUp, signInWithPassword } = useArcade();
 
   const [tab, setTab] = useState<"in" | "up">("in");
   const [playerName, setPlayerName] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState<Msg>(null);
+  const [msg, setMsg] = useState<Msg>(
+    params.get("error") === "confirmacion" ? LINK_ERROR : null,
+  );
   const [sending, setSending] = useState(false);
+  // Correo al que se envió el enlace. Mientras tenga valor se muestra la
+  // pantalla de aviso en lugar del formulario.
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const switchTab = (next: "in" | "up") => {
     setTab(next);
@@ -50,12 +74,14 @@ export default function Auth() {
       return;
     }
 
-    // El paso 7 del SPEC 13 sustituye esto por la pantalla "revisa tu correo".
-    setMsg({
-      kind: "ok",
-      tag: "> CUENTA CREADA",
-      text: `Te hemos enviado un correo a ${email}. Abre el enlace para activar la cuenta y entrar.`,
-    });
+    setSentTo(email);
+  };
+
+  const volverAlAcceso = () => {
+    setSentTo(null);
+    setMsg(null);
+    setTab("in");
+    setPass("");
   };
 
   return (
@@ -77,113 +103,137 @@ export default function Auth() {
           </div>
         </div>
 
-        <div className="auth-tabs">
-          <button
-            className={tab === "in" ? "on" : ""}
-            onClick={() => switchTab("in")}
-          >
-            INICIAR SESIÓN
-          </button>
-          <button
-            className={tab === "up" ? "on" : ""}
-            onClick={() => switchTab("up")}
-          >
-            CREAR CUENTA
-          </button>
-        </div>
-
-        {msg && (
-          <div className={`auth-msg ${msg.kind} slide-in`} role="alert">
-            <span className="tag">{msg.tag}</span>
-            <p>{msg.text}</p>
+        {sentTo ? (
+          <div className="auth-sent slide-in">
+            <h3>REVISA TU CORREO</h3>
+            <p>
+              Hemos enviado un enlace a <strong>{sentTo}</strong>. Ábrelo para
+              activar la cuenta y entrar.
+            </p>
+            <p className="hint">
+              ¿No aparece? Mira en spam o en correo no deseado.
+            </p>
+            <button
+              className="btn ghost"
+              style={{ width: "100%", marginTop: 16 }}
+              onClick={volverAlAcceso}
+            >
+              VOLVER AL ACCESO
+            </button>
           </div>
-        )}
-
-        <form onSubmit={submit}>
-          {tab === "up" && (
-            <div className="field slide-in">
-              <label>Nombre de jugador</label>
-              <input
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="PX_KAI"
-                maxLength={10}
-                style={{ textTransform: "uppercase" }}
-                autoComplete="nickname"
-              />
+        ) : (
+          <>
+            <div className="auth-tabs">
+              <button
+                className={tab === "in" ? "on" : ""}
+                onClick={() => switchTab("in")}
+              >
+                INICIAR SESIÓN
+              </button>
+              <button
+                className={tab === "up" ? "on" : ""}
+                onClick={() => switchTab("up")}
+              >
+                CREAR CUENTA
+              </button>
             </div>
-          )}
 
-          <div className="field">
-            <label>Correo electrónico</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="jugador@vault.gg"
-              autoComplete="email"
-            />
-          </div>
+            {msg && (
+              <div className={`auth-msg ${msg.kind} slide-in`} role="alert">
+                <span className="tag">{msg.tag}</span>
+                <p>{msg.text}</p>
+              </div>
+            )}
 
-          <div className="field">
-            <label>Contraseña</label>
-            <input
-              type="password"
-              required
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              placeholder="••••••••"
-              autoComplete={tab === "in" ? "current-password" : "new-password"}
-            />
-          </div>
+            <form onSubmit={submit}>
+              {tab === "up" && (
+                <div className="field slide-in">
+                  <label>Nombre de jugador</label>
+                  <input
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    placeholder="PX_KAI"
+                    maxLength={10}
+                    style={{ textTransform: "uppercase" }}
+                    autoComplete="nickname"
+                  />
+                </div>
+              )}
 
-          <button
-            className="btn lg"
-            type="submit"
-            disabled={sending}
-            style={{ width: "100%", marginTop: 8 }}
-          >
-            {sending
-              ? "CONECTANDO…"
-              : tab === "in"
-                ? "ENTRAR AL VAULT"
-                : "CREAR Y JUGAR"}
-          </button>
-        </form>
+              <div className="field">
+                <label>Correo electrónico</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="jugador@vault.gg"
+                  autoComplete="email"
+                />
+              </div>
 
-        <button
-          className="btn ghost"
-          style={{ width: "100%", marginTop: 10 }}
-          onClick={() => {
-            continueAsGuest();
-            router.push("/biblioteca");
-          }}
-        >
-          JUGAR COMO INVITADO
-        </button>
+              <div className="field">
+                <label>Contraseña</label>
+                <input
+                  type="password"
+                  required
+                  value={pass}
+                  onChange={(e) => setPass(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete={
+                    tab === "in" ? "current-password" : "new-password"
+                  }
+                />
+              </div>
 
-        <div className="auth-divider">O CONTINÚA CON</div>
-        <div className="social">
-          <button className="btn ghost" type="button">
-            ◆ GOOGLE
-          </button>
-          <button className="btn ghost" type="button">
-            ▣ GITHUB
-          </button>
-        </div>
+              <button
+                className="btn lg"
+                type="submit"
+                disabled={sending}
+                style={{ width: "100%", marginTop: 8 }}
+              >
+                {sending
+                  ? "CONECTANDO…"
+                  : tab === "in"
+                    ? "ENTRAR AL VAULT"
+                    : "CREAR Y JUGAR"}
+              </button>
+            </form>
 
-        <div
-          style={{
-            marginTop: 18,
-            textAlign: "center",
-            fontSize: 11,
-            color: "var(--ink-faint)",
-            letterSpacing: "0.1em",
-          }}
-        >
-          AL ENTRAR ACEPTAS LOS TÉRMINOS DEL SALÓN ARCADE
-        </div>
+            <button
+              className="btn ghost"
+              style={{ width: "100%", marginTop: 10 }}
+              onClick={() => {
+                continueAsGuest();
+                router.push("/biblioteca");
+              }}
+            >
+              JUGAR COMO INVITADO
+            </button>
+
+            <div className="auth-divider">O CONTINÚA CON</div>
+            <div className="social">
+              <button className="btn ghost" type="button">
+                ◆ GOOGLE
+              </button>
+              <button className="btn ghost" type="button">
+                ▣ GITHUB
+              </button>
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                textAlign: "center",
+                fontSize: 11,
+                color: "var(--ink-faint)",
+                letterSpacing: "0.1em",
+              }}
+            >
+              AL ENTRAR ACEPTAS LOS TÉRMINOS DEL SALÓN ARCADE
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

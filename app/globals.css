@@ -1062,6 +1062,26 @@ a { color: inherit; text-decoration: none; }
 .auth-msg.ok { border-left-color: var(--cyan); }
 .auth-msg.ok .tag { color: var(--cyan); text-shadow: 0 0 8px rgba(0,245,255,0.5); }
 
+/* Pantalla de "revisa tu correo": sustituye al formulario tras el registro. */
+.auth-sent { text-align: center; padding: 6px 0 2px; }
+.auth-sent h3 {
+  margin: 0 0 14px;
+  font-family: var(--pixel);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0,245,255,0.5);
+}
+.auth-sent p {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--ink-dim);
+}
+.auth-sent p strong { color: var(--ink); font-weight: 400; }
+.auth-sent .hint { font-size: 11px; color: var(--ink-faint); }
+
 /* El sistema de diseño no tenía estado deshabilitado. Se acota a la ficha de
    acceso para no alterar botones de otras páginas. */
 .auth-card .btn:disabled { opacity: 0.5; cursor: not-allowed; }
