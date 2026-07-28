@@ -41,11 +41,16 @@ function AuthCard() {
   const router = useRouter();
   const params = useSearchParams();
   const {
+    user,
+    email: cuentaEmail,
+    userId,
+    loading,
     continueAsGuest,
     signUp,
     signInWithPassword,
     signInWithOAuth,
     requestPasswordReset,
+    updatePlayerName,
   } = useArcade();
 
   const [tab, setTab] = useState<"in" | "up">("in");
@@ -64,6 +69,27 @@ function AuthCard() {
   // muestra la pantalla de aviso en lugar del formulario.
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [sentKind, setSentKind] = useState<"alta" | "reset">("alta");
+  // Nombre en edición. `null` = aún no se ha tocado, así que se muestra el
+  // actual. Derivarlo evita sincronizarlo con un efecto cuando llega el perfil.
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+
+  const guardarNombre = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (sending) return;
+    setMsg(null);
+    setSending(true);
+    const res = await updatePlayerName(nameDraft ?? user?.name ?? "");
+    setSending(false);
+    setMsg(
+      res.ok
+        ? {
+            kind: "ok",
+            tag: "> NOMBRE ACTUALIZADO",
+            text: "Así te verá el salón de la fama.",
+          }
+        : { kind: "bad", tag: "> NO SE PUDO CAMBIAR", text: res.error },
+    );
+  };
 
   const switchTab = (next: "in" | "up") => {
     setTab(next);
@@ -143,11 +169,60 @@ function AuthCard() {
               marginTop: 6,
             }}
           >
-            ACCESO AL SISTEMA · v2.6
+            {userId ? "TU CUENTA" : "ACCESO AL SISTEMA · v2.6"}
           </div>
         </div>
 
-        {sentTo ? (
+        {userId ? (
+          <div className="auth-account slide-in">
+            <div className="who">{cuentaEmail ?? "Sesión iniciada"}</div>
+
+            {msg && (
+              <div className={`auth-msg ${msg.kind} slide-in`} role="alert">
+                <span className="tag">{msg.tag}</span>
+                <p>{msg.text}</p>
+              </div>
+            )}
+
+            <form onSubmit={guardarNombre}>
+              <div className="field">
+                <label>Nombre de jugador</label>
+                <input
+                  value={nameDraft ?? user?.name ?? ""}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  maxLength={10}
+                  required
+                  style={{ textTransform: "uppercase" }}
+                  autoComplete="nickname"
+                />
+              </div>
+              <p className="hint">
+                Hasta 10 caracteres. Es el nombre con el que apareces en el
+                salón de la fama, y no puede repetirse.
+              </p>
+              <button
+                className="btn lg"
+                type="submit"
+                disabled={sending}
+                style={{ width: "100%", marginTop: 8 }}
+              >
+                {sending ? "GUARDANDO…" : "GUARDAR NOMBRE"}
+              </button>
+            </form>
+
+            <button
+              className="btn ghost"
+              style={{ width: "100%", marginTop: 10 }}
+              onClick={() => router.push("/biblioteca")}
+            >
+              IR A LA BIBLIOTECA
+            </button>
+          </div>
+        ) : loading ? (
+          // Sin esto, quien ya tiene sesión ve un instante el formulario de
+          // login antes de que se resuelva `getUser()`.
+          <div className="auth-account" style={{ minHeight: 220 }} />
+        ) : sentTo ? (
           <div className="auth-sent slide-in">
             <h3>REVISA TU CORREO</h3>
             <p>
