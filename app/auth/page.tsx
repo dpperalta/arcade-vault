@@ -6,10 +6,23 @@ import { useArcade } from "../components/ArcadeProvider";
 
 type Msg = { kind: "bad" | "ok"; tag: string; text: string } | null;
 
-const LINK_ERROR: Msg = {
-  kind: "bad",
-  tag: "> ENLACE NO VÁLIDO",
-  text: "Ese enlace ha caducado o ya se había usado. Vuelve a registrarte o inicia sesión.",
+/** Avisos que llegan por query param desde las rutas de vuelta. */
+const RETURN_MSG: Record<string, NonNullable<Msg>> = {
+  confirmacion: {
+    kind: "bad",
+    tag: "> ENLACE NO VÁLIDO",
+    text: "Ese enlace ha caducado o ya se había usado. Vuelve a registrarte o inicia sesión.",
+  },
+  cancelado: {
+    kind: "ok",
+    tag: "> ACCESO CANCELADO",
+    text: "Has cancelado el acceso. Puedes probar otra vez o entrar con tu correo.",
+  },
+  oauth: {
+    kind: "bad",
+    tag: "> ACCESO DENEGADO",
+    text: "No hemos podido completar el acceso con ese proveedor. Inténtalo de nuevo.",
+  },
 };
 
 /**
@@ -27,16 +40,19 @@ export default function Auth() {
 function AuthCard() {
   const router = useRouter();
   const params = useSearchParams();
-  const { continueAsGuest, signUp, signInWithPassword } = useArcade();
+  const { continueAsGuest, signUp, signInWithPassword, signInWithOAuth } =
+    useArcade();
 
   const [tab, setTab] = useState<"in" | "up">("in");
   const [playerName, setPlayerName] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<Msg>(
-    params.get("error") === "confirmacion" ? LINK_ERROR : null,
+    RETURN_MSG[params.get("error") ?? ""] ?? null,
   );
   const [sending, setSending] = useState(false);
+  // Proveedor cuyo redirect está en marcha, para deshabilitar solo ese botón.
+  const [oauthBusy, setOauthBusy] = useState<"google" | "github" | null>(null);
   // Correo al que se envió el enlace. Mientras tenga valor se muestra la
   // pantalla de aviso en lugar del formulario.
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -75,6 +91,19 @@ function AuthCard() {
     }
 
     setSentTo(email);
+  };
+
+  const entrarCon = async (provider: "google" | "github") => {
+    if (oauthBusy) return;
+    setMsg(null);
+    setOauthBusy(provider);
+    const res = await signInWithOAuth(provider);
+    // Si sale bien, el navegador ya está saliendo hacia el proveedor y no hay
+    // nada que pintar. Solo se recupera el botón cuando falla.
+    if (!res.ok) {
+      setOauthBusy(null);
+      setMsg({ kind: "bad", tag: "> ACCESO DENEGADO", text: res.error });
+    }
   };
 
   const volverAlAcceso = () => {
@@ -213,11 +242,21 @@ function AuthCard() {
 
             <div className="auth-divider">O CONTINÚA CON</div>
             <div className="social">
-              <button className="btn ghost" type="button">
-                ◆ GOOGLE
+              <button
+                className="btn ghost"
+                type="button"
+                disabled={oauthBusy !== null}
+                onClick={() => entrarCon("google")}
+              >
+                {oauthBusy === "google" ? "ABRIENDO…" : "◆ GOOGLE"}
               </button>
-              <button className="btn ghost" type="button">
-                ▣ GITHUB
+              <button
+                className="btn ghost"
+                type="button"
+                disabled={oauthBusy !== null}
+                onClick={() => entrarCon("github")}
+              >
+                {oauthBusy === "github" ? "ABRIENDO…" : "▣ GITHUB"}
               </button>
             </div>
 
