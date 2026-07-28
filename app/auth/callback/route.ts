@@ -15,6 +15,12 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const oauthError = searchParams.get("error");
 
+  // Destino tras el canje. Se exige ruta interna ("/algo", nunca "//otro.host")
+  // para que este parámetro no se pueda usar como redirección abierta.
+  const nextParam = searchParams.get("next");
+  const next =
+    nextParam && /^\/(?!\/)/.test(nextParam) ? nextParam : "/biblioteca";
+
   if (oauthError) {
     // access_denied = el usuario pulsó "cancelar". No es un fallo del sistema.
     const motivo = oauthError === "access_denied" ? "cancelado" : "oauth";
@@ -24,7 +30,7 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}/biblioteca`);
+    if (!error) return NextResponse.redirect(`${origin}${next}`);
   }
 
   return NextResponse.redirect(`${origin}/auth?error=oauth`);

@@ -37,6 +37,8 @@ interface ArcadeContextValue {
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   signInWithOAuth: (provider: OAuthProvider) => Promise<AuthResult>;
   requestPasswordReset: (email: string) => Promise<AuthResult>;
+  /** Fija la contraseña nueva. Requiere la sesión que abre el enlace de recuperación. */
+  updatePassword: (password: string) => Promise<AuthResult>;
   updatePlayerName: (name: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
@@ -227,8 +229,20 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
   const requestPasswordReset = useCallback(
     async (emailArg: string): Promise<AuthResult> => {
       const { error } = await supabase.auth.resetPasswordForEmail(emailArg, {
-        redirectTo: `${window.location.origin}/auth/recuperar`,
+        // Pasa por /auth/callback, que ya canjea el código y deja la sesión
+        // abierta, y de ahí a la pantalla de contraseña nueva.
+        redirectTo: `${window.location.origin}/auth/callback?next=/auth/recuperar`,
       });
+      return error
+        ? { ok: false, error: translateAuthError(error) }
+        : { ok: true };
+    },
+    [supabase],
+  );
+
+  const updatePassword = useCallback(
+    async (password: string): Promise<AuthResult> => {
+      const { error } = await supabase.auth.updateUser({ password });
       return error
         ? { ok: false, error: translateAuthError(error) }
         : { ok: true };
@@ -285,6 +299,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signInWithOAuth,
       requestPasswordReset,
+      updatePassword,
       updatePlayerName,
       signOut,
       continueAsGuest,
@@ -298,6 +313,7 @@ export function ArcadeProvider({ children }: { children: ReactNode }) {
       signInWithPassword,
       signInWithOAuth,
       requestPasswordReset,
+      updatePassword,
       updatePlayerName,
       signOut,
       continueAsGuest,

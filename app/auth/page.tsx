@@ -40,10 +40,17 @@ export default function Auth() {
 function AuthCard() {
   const router = useRouter();
   const params = useSearchParams();
-  const { continueAsGuest, signUp, signInWithPassword, signInWithOAuth } =
-    useArcade();
+  const {
+    continueAsGuest,
+    signUp,
+    signInWithPassword,
+    signInWithOAuth,
+    requestPasswordReset,
+  } = useArcade();
 
   const [tab, setTab] = useState<"in" | "up">("in");
+  // Vista de "he olvidado la contraseña": solo pide el correo.
+  const [recovering, setRecovering] = useState(false);
   const [playerName, setPlayerName] = useState("");
   const [pass, setPass] = useState("");
   const [email, setEmail] = useState("");
@@ -53,9 +60,10 @@ function AuthCard() {
   const [sending, setSending] = useState(false);
   // Proveedor cuyo redirect está en marcha, para deshabilitar solo ese botón.
   const [oauthBusy, setOauthBusy] = useState<"google" | "github" | null>(null);
-  // Correo al que se envió el enlace. Mientras tenga valor se muestra la
-  // pantalla de aviso en lugar del formulario.
+  // Correo al que se envió el enlace, y para qué. Mientras tenga valor se
+  // muestra la pantalla de aviso en lugar del formulario.
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [sentKind, setSentKind] = useState<"alta" | "reset">("alta");
 
   const switchTab = (next: "in" | "up") => {
     setTab(next);
@@ -68,8 +76,9 @@ function AuthCard() {
     setMsg(null);
     setSending(true);
 
-    const res =
-      tab === "in"
+    const res = recovering
+      ? await requestPasswordReset(email)
+      : tab === "in"
         ? await signInWithPassword(email, pass)
         : await signUp(email, pass, playerName);
 
@@ -79,17 +88,22 @@ function AuthCard() {
       setMsg({
         kind: "bad",
         // Press Start 2P no trae glifos decorativos; ">" sí, y suena a terminal.
-        tag: tab === "in" ? "> ACCESO DENEGADO" : "> REGISTRO RECHAZADO",
+        tag: recovering
+          ? "> NO SE PUDO ENVIAR"
+          : tab === "in"
+            ? "> ACCESO DENEGADO"
+            : "> REGISTRO RECHAZADO",
         text: res.error,
       });
       return;
     }
 
-    if (tab === "in") {
+    if (!recovering && tab === "in") {
       router.push("/biblioteca");
       return;
     }
 
+    setSentKind(recovering ? "reset" : "alta");
     setSentTo(email);
   };
 
@@ -109,6 +123,7 @@ function AuthCard() {
   const volverAlAcceso = () => {
     setSentTo(null);
     setMsg(null);
+    setRecovering(false);
     setTab("in");
     setPass("");
   };
@@ -136,8 +151,10 @@ function AuthCard() {
           <div className="auth-sent slide-in">
             <h3>REVISA TU CORREO</h3>
             <p>
-              Hemos enviado un enlace a <strong>{sentTo}</strong>. Ábrelo para
-              activar la cuenta y entrar.
+              Hemos enviado un enlace a <strong>{sentTo}</strong>.{" "}
+              {sentKind === "alta"
+                ? "Ábrelo para activar la cuenta y entrar."
+                : "Ábrelo para elegir una contraseña nueva."}
             </p>
             <p className="hint">
               ¿No aparece? Mira en spam o en correo no deseado.
@@ -152,20 +169,30 @@ function AuthCard() {
           </div>
         ) : (
           <>
-            <div className="auth-tabs">
-              <button
-                className={tab === "in" ? "on" : ""}
-                onClick={() => switchTab("in")}
-              >
-                INICIAR SESIÓN
-              </button>
-              <button
-                className={tab === "up" ? "on" : ""}
-                onClick={() => switchTab("up")}
-              >
-                CREAR CUENTA
-              </button>
-            </div>
+            {recovering ? (
+              <div className="auth-recover-head">
+                <h3>RECUPERAR ACCESO</h3>
+                <p>
+                  Escribe tu correo y te enviamos un enlace para elegir una
+                  contraseña nueva.
+                </p>
+              </div>
+            ) : (
+              <div className="auth-tabs">
+                <button
+                  className={tab === "in" ? "on" : ""}
+                  onClick={() => switchTab("in")}
+                >
+                  INICIAR SESIÓN
+                </button>
+                <button
+                  className={tab === "up" ? "on" : ""}
+                  onClick={() => switchTab("up")}
+                >
+                  CREAR CUENTA
+                </button>
+              </div>
+            )}
 
             {msg && (
               <div className={`auth-msg ${msg.kind} slide-in`} role="alert">
@@ -175,7 +202,7 @@ function AuthCard() {
             )}
 
             <form onSubmit={submit}>
-              {tab === "up" && (
+              {tab === "up" && !recovering && (
                 <div className="field slide-in">
                   <label>Nombre de jugador</label>
                   <input
@@ -201,19 +228,35 @@ function AuthCard() {
                 />
               </div>
 
-              <div className="field">
-                <label>Contraseña</label>
-                <input
-                  type="password"
-                  required
-                  value={pass}
-                  onChange={(e) => setPass(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={
-                    tab === "in" ? "current-password" : "new-password"
-                  }
-                />
-              </div>
+              {!recovering && (
+                <div className="field">
+                  <label>Contraseña</label>
+                  <input
+                    type="password"
+                    required
+                    value={pass}
+                    onChange={(e) => setPass(e.target.value)}
+                    placeholder="••••••••"
+                    autoComplete={
+                      tab === "in" ? "current-password" : "new-password"
+                    }
+                  />
+                </div>
+              )}
+
+              {tab === "in" && !recovering && (
+                <button
+                  type="button"
+                  className="auth-link"
+                  onClick={() => {
+                    setRecovering(true);
+                    setMsg(null);
+                    setPass("");
+                  }}
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              )}
 
               <button
                 className="btn lg"
@@ -222,55 +265,67 @@ function AuthCard() {
                 style={{ width: "100%", marginTop: 8 }}
               >
                 {sending
-                  ? "CONECTANDO…"
-                  : tab === "in"
-                    ? "ENTRAR AL VAULT"
-                    : "CREAR Y JUGAR"}
+                  ? recovering
+                    ? "ENVIANDO…"
+                    : "CONECTANDO…"
+                  : recovering
+                    ? "ENVIAR ENLACE"
+                    : tab === "in"
+                      ? "ENTRAR AL VAULT"
+                      : "CREAR Y JUGAR"}
               </button>
             </form>
 
             <button
               className="btn ghost"
               style={{ width: "100%", marginTop: 10 }}
-              onClick={() => {
-                continueAsGuest();
-                router.push("/biblioteca");
-              }}
+              onClick={
+                recovering
+                  ? volverAlAcceso
+                  : () => {
+                      continueAsGuest();
+                      router.push("/biblioteca");
+                    }
+              }
             >
-              JUGAR COMO INVITADO
+              {recovering ? "VOLVER AL ACCESO" : "JUGAR COMO INVITADO"}
             </button>
 
-            <div className="auth-divider">O CONTINÚA CON</div>
-            <div className="social">
-              <button
-                className="btn ghost"
-                type="button"
-                disabled={oauthBusy !== null}
-                onClick={() => entrarCon("google")}
-              >
-                {oauthBusy === "google" ? "ABRIENDO…" : "◆ GOOGLE"}
-              </button>
-              <button
-                className="btn ghost"
-                type="button"
-                disabled={oauthBusy !== null}
-                onClick={() => entrarCon("github")}
-              >
-                {oauthBusy === "github" ? "ABRIENDO…" : "▣ GITHUB"}
-              </button>
-            </div>
+            {!recovering && (
+              <>
+                <div className="auth-divider">O CONTINÚA CON</div>
+                <div className="social">
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    disabled={oauthBusy !== null}
+                    onClick={() => entrarCon("google")}
+                  >
+                    {oauthBusy === "google" ? "ABRIENDO…" : "◆ GOOGLE"}
+                  </button>
+                  <button
+                    className="btn ghost"
+                    type="button"
+                    disabled={oauthBusy !== null}
+                    onClick={() => entrarCon("github")}
+                  >
+                    {oauthBusy === "github" ? "ABRIENDO…" : "▣ GITHUB"}
+                  </button>
+                </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                textAlign: "center",
-                fontSize: 11,
-                color: "var(--ink-faint)",
-                letterSpacing: "0.1em",
-              }}
-            >
-              AL ENTRAR ACEPTAS LOS TÉRMINOS DEL SALÓN ARCADE
-            </div>
+                <div
+                  style={{
+                    marginTop: 18,
+                    textAlign: "center",
+                    fontSize: 11,
+                    color: "var(--ink-faint)",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  AL ENTRAR ACEPTAS LOS TÉRMINOS DEL SALÓN ARCADE
+                </div>
+              </>
+            )}
           </>
         )}
       </div>

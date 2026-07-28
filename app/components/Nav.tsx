@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useArcade } from "./ArcadeProvider";
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
-  const { user, signOut } = useArcade();
+  const router = useRouter();
+  const { user, email, signOut } = useArcade();
 
   const isHome = pathname === "/";
   // "biblioteca" cubre el catálogo y las rutas de juego (detalle/reproductor).
@@ -21,6 +24,30 @@ export default function Nav() {
   const isAuth = pathname === "/auth";
 
   const close = () => setOpen(false);
+
+  // El menú de cuenta se cierra al pulsar fuera y con Escape. Ambos listeners
+  // solo existen mientras está abierto.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  const salir = async () => {
+    setMenuOpen(false);
+    await signOut();
+    router.push("/");
+  };
 
   return (
     <>
@@ -63,9 +90,32 @@ export default function Nav() {
           <span>CRÉDITOS · 03</span>
         </div>
         {user ? (
-          <button className="btn ghost auth-btn" onClick={signOut}>
-            {user.name} ▾
-          </button>
+          <div className="av-user" ref={menuRef}>
+            <button
+              className="btn ghost auth-btn"
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+            >
+              {user.name} {menuOpen ? "▴" : "▾"}
+            </button>
+            {menuOpen && (
+              <div className="av-user-menu" role="menu">
+                <div className="who">{email ?? "Sesión iniciada"}</div>
+                <Link
+                  className="btn ghost"
+                  href="/auth"
+                  role="menuitem"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  PERFIL
+                </Link>
+                <button className="btn ghost" role="menuitem" onClick={salir}>
+                  CERRAR SESIÓN
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <Link className="btn auth-btn" href="/auth" onClick={close}>
             Iniciar Sesión
@@ -85,7 +135,10 @@ export default function Nav() {
         onClick={close}
       />
       <aside className={"av-mobile-panel" + (open ? " open" : "")}>
-        <div className="pixel neon-cyan" style={{ fontSize: 11, marginBottom: 16 }}>
+        <div
+          className="pixel neon-cyan"
+          style={{ fontSize: 11, marginBottom: 16 }}
+        >
           MENÚ
         </div>
         <Link className={isHome ? "active" : ""} href="/" onClick={close}>
@@ -101,7 +154,11 @@ export default function Nav() {
         <Link className={isSalon ? "active" : ""} href="/salon" onClick={close}>
           Salón de la Fama
         </Link>
-        <Link className={isAbout ? "active" : ""} href="/acerca" onClick={close}>
+        <Link
+          className={isAbout ? "active" : ""}
+          href="/acerca"
+          onClick={close}
+        >
           Acerca de
         </Link>
         <Link className={isAuth ? "active" : ""} href="/auth" onClick={close}>
@@ -110,7 +167,11 @@ export default function Nav() {
         <div style={{ flex: 1 }} />
         <div
           className="pixel"
-          style={{ fontSize: 9, color: "var(--ink-faint)", letterSpacing: "0.16em" }}
+          style={{
+            fontSize: 9,
+            color: "var(--ink-faint)",
+            letterSpacing: "0.16em",
+          }}
         >
           CRÉDITOS · 03
         </div>

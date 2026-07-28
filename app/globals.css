@@ -202,6 +202,35 @@ a { color: inherit; text-decoration: none; }
 .av-nav .coin-counter { display: flex; align-items: center; gap: 8px; font-family: var(--pixel); font-size: 9px; color: var(--yellow); }
 .av-nav .coin-counter .coin { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff8b0, #f5ff00 60%, #b0b800); box-shadow: 0 0 8px var(--yellow); }
 .av-nav .auth-btn { margin-left: 16px; }
+
+/* Menú de cuenta. Vive dentro de .av-nav (z-index 50), que ya crea su propio
+   contexto de apilado, así que basta con elevarlo sobre sus hermanos. */
+.av-user { position: relative; margin-left: 16px; }
+.av-user .auth-btn { margin-left: 0; }
+.av-user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  min-width: 230px;
+  padding: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 0 26px rgba(0,245,255,0.22);
+}
+.av-user-menu .who {
+  font-family: var(--mono);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+  word-break: break-all;
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.av-user-menu .btn { width: 100%; padding: 11px; font-size: 9px; }
+.av-user-menu .btn + .btn { margin-top: 8px; }
 .av-nav .hamburger { display: none; }
 
 @media (max-width: 840px) {
@@ -1061,6 +1090,43 @@ a { color: inherit; text-decoration: none; }
 .auth-msg.bad .tag { color: var(--magenta); text-shadow: 0 0 8px rgba(255,0,110,0.55); }
 .auth-msg.ok { border-left-color: var(--cyan); }
 .auth-msg.ok .tag { color: var(--cyan); text-shadow: 0 0 8px rgba(0,245,255,0.5); }
+
+/* Enlace discreto dentro del formulario (recuperar contraseña). Es un <button>
+   por accesibilidad —no navega—, así que hay que quitarle el aspecto de botón. */
+.auth-link {
+  display: block;
+  margin: -4px 0 12px auto;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 120ms;
+}
+.auth-link:hover { color: var(--cyan); }
+
+/* Cabecera de la vista de recuperación, en lugar de las pestañas. */
+.auth-recover-head { margin: 18px 0; text-align: center; }
+.auth-recover-head h3 {
+  margin: 0 0 10px;
+  font-family: var(--pixel);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0,245,255,0.5);
+}
+.auth-recover-head p {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
 
 /* Pantalla de "revisa tu correo": sustituye al formulario tras el registro. */
 .auth-sent { text-align: center; padding: 6px 0 2px; }
