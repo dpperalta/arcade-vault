@@ -132,7 +132,13 @@ export async function fetchScores(
 }
 
 /**
- * Inserta una puntuación real. `user_id` siempre `null` por ahora (sin auth).
+ * Inserta una puntuación real, atribuida a la cuenta que la consiguió.
+ *
+ * El `user_id` lo resuelve esta función leyendo la sesión, en lugar de recibirlo
+ * de quien la llama: así las seis páginas de juego siguen invocándola igual y no
+ * hay que tocarlas (SPEC 13). Si no hay sesión —modo invitado— va `null`, que la
+ * política RLS de `scores` acepta explícitamente.
+ *
  * No lanza: devuelve `{ ok: false }` si la BD falla, para no bloquear la UI.
  */
 export async function insertScore(entry: {
@@ -142,12 +148,26 @@ export async function insertScore(entry: {
 }): Promise<{ ok: boolean }> {
   try {
     const supabase = createClient();
+
+    // Si la sesión no se resuelve a tiempo, se guarda como invitado antes que
+    // perder la puntuación: `user_id` null siempre pasa la política de inserción.
+    let userId: string | null = null;
+    try {
+      const { data } = await withTimeout(
+        supabase.auth.getUser(),
+        DB_TIMEOUT_MS,
+      );
+      userId = data.user?.id ?? null;
+    } catch {
+      userId = null;
+    }
+
     const { error } = await withTimeout(
       supabase.from("scores").insert({
         game_id: entry.gameId,
         player_name: entry.playerName,
         score: entry.score,
-        user_id: null,
+        user_id: userId,
       }),
       DB_TIMEOUT_MS,
     );
