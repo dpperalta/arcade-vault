@@ -34,24 +34,24 @@ El punto de partida es `references/secutirty/security-checklist.md`, con cinco p
   - `app/components/ArcadeProvider.tsx:77` — el texto de `weak_password` pasa a decir 8.
 - Texto de ayuda visible bajo el campo de contraseña en el registro, indicando el mínimo.
 - Protección de rutas con Proxy Next.js: Aquí información de proxy: https://nextjs.org/docs/app/getting-started/proxy
-Ejemplo: proxy.ts
+  Ejemplo: proxy.ts
+
 ```ts
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
- 
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
 // This function can be marked `async` if using `await` inside
 export function proxy(request: NextRequest) {
-  return NextResponse.redirect(new URL('/home', request.url))
+  return NextResponse.redirect(new URL("/home", request.url));
 }
- 
+
 // Alternatively, you can use a default export:
 // export default function proxy(request: NextRequest) { ... }
- 
-export const config = {
-  matcher: '/about/:path*',
-}
-```
 
+export const config = {
+  matcher: "/about/:path*",
+};
+```
 
 **Supabase Auth (dashboard)**
 
@@ -180,6 +180,54 @@ _Sin cambios en archivos._
 **Paso 7 — Cierre y actualización del checklist.**
 Volver a ejecutar `get_advisors` de tipo `security` y confirmar cero lints. Marcar las cinco casillas de `references/secutirty/security-checklist.md` y anotar bajo cada una qué se hizo, o que ya estaba hecho en el caso de RLS.
 _Verificación:_ `get_advisors` devuelve una lista vacía. El checklist no tiene ninguna casilla sin marcar.
+
+---
+
+## Resultado de la implementación
+
+Tres desviaciones respecto a lo planificado. Ninguna es opcional: dos las impone
+el plan de Supabase y la tercera es un paso que se escribió sin contenido.
+
+**1. Leaked password protection — no se aplica.** La comprobación contra
+HaveIBeenPwned no está disponible en el plan actual del proyecto, así que el
+toggle no se puede activar. Consecuencias sobre los criterios de aceptación:
+
+- "Registrarse con la contraseña `password` es rechazado por estar comprometida"
+  → **no se cumple**, y no puede cumplirse sin cambiar de plan.
+- "`get_advisors` de tipo `security` devuelve una lista vacía de lints" → **no se
+  cumple**: queda permanentemente `auth_leaked_password_protection`. El objetivo
+  de "cero warnings" del encabezado de este spec es inalcanzable hoy; se alcanzó
+  el resto (de 3 lints a 1).
+
+**2. Rate limit en 2/hora, no en 10.** El plan tampoco deja configurar el rate
+limit de sign ups / sign ins, que está fijo en 2 por hora por IP. El criterio
+"el campo del dashboard muestra `10` por hora" **no se cumple**. El valor real es
+más restrictivo que el pedido, así que la intención anti-bot queda cubierta; lo
+que sube es el riesgo que ya anticipaban los riesgos de este spec —usuarios
+legítimos tras la misma IP— y con 2/hora es fácil de provocar.
+
+**3. Paso 6 saltado.** Se escribió como un título sin cuerpo ("Protección de
+rutas con Proxy Next.js"), sin verificación ni criterios de aceptación asociados,
+y lo que sugiere contradice el alcance de este mismo spec: "No se bloquea ninguna
+ruta. El sitio sigue siendo íntegramente público y jugable sin cuenta". Además
+`proxy.ts` **ya existe** desde SPEC 13, con un `matcher` que cubre todo el sitio
+y la decisión explícita de no redirigir nunca: solo refresca la sesión de
+Supabase. No se tocó nada. Si se quiere proteger alguna ruta, es un spec propio.
+
+**Desviación menor, dentro de lo previsto.** En `app/auth/page.tsx` el
+`minLength` se aplica **solo** cuando la pestaña es la de registro. El plan lo
+enunciaba sin condición, pero un `minLength` incondicional bloquearía en el
+navegador el login de las cuentas con contraseña de 6, que es justo lo que
+prohíbe el criterio de no regresión "iniciar sesión con una cuenta existente cuya
+contraseña tiene menos de 8 caracteres sigue funcionando". La forma condicional
+es la única que satisface los dos criterios a la vez.
+
+**Nota de proceso.** Durante la verificación del paso 5 el dashboard tenía
+activado además "Password Requirements" (exigir mayúsculas, números y símbolos),
+que este spec descarta expresamente. Se detectó porque el servidor rechazaba
+`contrasenya` con un motivo que la interfaz no explicaba, y se desactivó. El
+único motivo posible de `weak_password` vuelve a ser la longitud, que es lo que
+dice su traducción en `ArcadeProvider`.
 
 ---
 
