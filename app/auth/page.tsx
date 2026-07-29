@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useArcade } from "../components/ArcadeProvider";
+import { MIN_PASSWORD_LENGTH, useArcade } from "../components/ArcadeProvider";
 
 type Msg = { kind: "bad" | "ok"; tag: string; text: string } | null;
 
@@ -309,6 +309,10 @@ function AuthCard() {
                   <input
                     type="password"
                     required
+                    // Solo al crear cuenta. Al iniciar sesión no se valida el
+                    // largo: las cuentas anteriores a SPEC 14 tienen contraseñas
+                    // más cortas y siguen siendo válidas para entrar.
+                    minLength={tab === "up" ? MIN_PASSWORD_LENGTH : undefined}
                     value={pass}
                     onChange={(e) => setPass(e.target.value)}
                     placeholder="••••••••"
@@ -317,6 +321,13 @@ function AuthCard() {
                     }
                   />
                 </div>
+              )}
+
+              {tab === "up" && !recovering && (
+                <p className="hint">
+                  Al menos {MIN_PASSWORD_LENGTH} caracteres. Evita contraseñas
+                  que ya hayas usado en otros sitios.
+                </p>
               )}
 
               {tab === "in" && !recovering && (
