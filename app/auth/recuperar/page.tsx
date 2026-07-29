@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { useArcade } from "../../components/ArcadeProvider";
+import {
+  MIN_PASSWORD_LENGTH,
+  useArcade,
+} from "../../components/ArcadeProvider";
 
 /**
  * Destino del enlace de recuperación. Se llega aquí con la sesión ya abierta
@@ -99,7 +102,7 @@ export default function Recuperar() {
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={MIN_PASSWORD_LENGTH}
                   value={pass}
                   onChange={(e) => setPass(e.target.value)}
                   placeholder="••••••••"
@@ -111,7 +114,7 @@ export default function Recuperar() {
                 <input
                   type="password"
                   required
-                  minLength={6}
+                  minLength={MIN_PASSWORD_LENGTH}
                   value={repeat}
                   onChange={(e) => setRepeat(e.target.value)}
                   placeholder="••••••••"

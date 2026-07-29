@@ -46,6 +46,16 @@ interface ArcadeContextValue {
 
 const ArcadeContext = createContext<ArcadeContextValue | null>(null);
 
+/**
+ * Mínimo de caracteres de una contraseña, en un único sitio (SPEC 14).
+ *
+ * Es **solo para la UI**: quien manda de verdad es Supabase Auth, que rechaza la
+ * contraseña corta con o sin validación de navegador. Su papel es que el error
+ * se vea antes de la ida y vuelta al servidor. Debe coincidir con el ajuste
+ * "Minimum password length" del dashboard.
+ */
+export const MIN_PASSWORD_LENGTH = 8;
+
 /** Clave del invitado. Sustituye a `av_user`, cuyo contenido significaba otra cosa. */
 const GUEST_KEY = "av_guest";
 const LEGACY_USER_KEY = "av_user";
@@ -74,7 +84,7 @@ const AUTH_ERRORS: Record<string, string> = {
     "Todavía no has confirmado tu correo. Revisa tu bandeja de entrada.",
   user_already_exists: "Ese correo ya tiene una cuenta. Inicia sesión.",
   email_exists: "Ese correo ya tiene una cuenta. Inicia sesión.",
-  weak_password: "La contraseña debe tener al menos 6 caracteres.",
+  weak_password: `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`,
   email_address_invalid: "Ese correo no parece válido.",
   validation_failed:
     "Revisa los datos: falta algo o no tiene el formato correcto.",
